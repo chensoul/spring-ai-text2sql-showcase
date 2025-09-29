@@ -238,13 +238,27 @@ default-character-set=utf8mb4
 2. 更新 `data.sql` 添加示例数据
 3. 更新 `DatabaseSchemaService` 获取新表结构
 
-### 2. 支持更多数据库
-修改 `application.yml` 中的数据库配置：
+### 2. 数据库配置
+项目使用 MySQL 8 数据库，通过 Docker Compose 管理：
+
 ```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/your_database
-    driver-class-name: org.postgresql.Driver
+# docker-compose.yml
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: text2sql_db
+    volumes:
+      - ./mysql.cnf:/etc/mysql/conf.d/mysql.cnf
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql
+```
+
+**重要**：`mysql.cnf` 文件确保中文字符正确显示：
+```ini
+[mysql]
+default-character-set=utf8mb4
 ```
 
 ### 3. 自定义 AI 提示模板
