@@ -649,8 +649,10 @@
             // 转换列表项 - item -> <li>item</li>
             html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
             
-            // 包装连续的列表项为<ul>
-            html = html.replace(/(<li>.*?<\/li>(?:\s*<li>.*?<\/li>)*)/gs, '<ul>$1</ul>');
+            // 包装连续的列表项为<ul>，处理多行列表
+            html = html.replace(/(<li>.*?<\/li>(?:\s*<li>.*?<\/li>)*)/gs, function(match) {
+                return '<ul>' + match + '</ul>';
+            });
             
             return html;
         }
