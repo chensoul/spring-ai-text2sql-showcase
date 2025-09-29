@@ -1,5 +1,7 @@
 package com.example.text2sql.controller;
 
+import com.example.text2sql.service.DatabaseTool;
+import com.example.text2sql.service.Text2SqlResult;
 import com.example.text2sql.service.Text2SqlService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class Text2SqlController {
     private final Text2SqlService text2SqlService;
-
+    private final DatabaseTool databaseTool;
 
     /**
      * 主页
@@ -44,7 +46,7 @@ public class Text2SqlController {
         }
 
         // 处理查询
-        Text2SqlService.Text2SqlResult result = text2SqlService.processQuery(query);
+        Text2SqlResult result = text2SqlService.processQuery(query);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", result.isSuccess());
@@ -67,19 +69,7 @@ public class Text2SqlController {
     @ResponseBody
     public ResponseEntity<Map<String, String>> getSchema() {
         Map<String, String> response = new HashMap<>();
-        response.put("schema", text2SqlService.getDatabaseSchema());
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 健康检查接口
-     */
-    @GetMapping("/api/health")
-    @ResponseBody
-    public ResponseEntity<Map<String, String>> health() {
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "UP");
-        response.put("service", "Spring AI Text2SQL");
+        response.put("schema", databaseTool.getDatabaseSchema());
         return ResponseEntity.ok(response);
     }
 }
