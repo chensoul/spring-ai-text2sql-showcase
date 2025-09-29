@@ -54,6 +54,9 @@
             background: #f0f0f0;
             transform: translateX(5px);
         }
+        #collapseIcon {
+            transition: transform 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -92,27 +95,38 @@
 
                         <!-- 示例查询 -->
                         <div class="example-queries">
-                            <h6><i class="fas fa-lightbulb"></i> 示例查询（点击使用）：</h6>
-                            <div class="example-query" onclick="setQuery('查询所有员工的姓名和工资')">
-                                查询所有员工的姓名和工资
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> 示例查询（点击使用）</h6>
+                                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#exampleQueriesCollapse" aria-expanded="false" 
+                                        aria-controls="exampleQueriesCollapse">
+                                    <i class="fas fa-chevron-down" id="collapseIcon"></i>
+                                </button>
                             </div>
-                            <div class="example-query" onclick="setQuery('找出工资最高的前5名员工')">
-                                找出工资最高的前5名员工
-                            </div>
-                            <div class="example-query" onclick="setQuery('统计每个部门的员工数量')">
-                                统计每个部门的员工数量
-                            </div>
-                            <div class="example-query" onclick="setQuery('查询正在进行中的项目信息')">
-                                查询正在进行中的项目信息
-                            </div>
-                            <div class="example-query" onclick="setQuery('找出参与项目最多的5名员工')">
-                                找出参与项目最多的5名员工
-                            </div>
-                            <div class="example-query" onclick="setQuery('计算所有员工的平均工资')">
-                                计算所有员工的平均工资
-                            </div>
-                            <div class="example-query" onclick="setQuery('查询2022年入职的员工')">
-                                查询2022年入职的员工
+                            <div class="collapse" id="exampleQueriesCollapse">
+                                <div class="mt-3">
+                                    <div class="example-query" onclick="setQuery('查询所有员工的姓名和工资')">
+                                        查询所有员工的姓名和工资
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('找出工资最高的前5名员工')">
+                                        找出工资最高的前5名员工
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('统计每个部门的员工数量')">
+                                        统计每个部门的员工数量
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('查询正在进行中的项目信息')">
+                                        查询正在进行中的项目信息
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('找出参与项目最多的5名员工')">
+                                        找出参与项目最多的5名员工
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('计算所有员工的平均工资')">
+                                        计算所有员工的平均工资
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('查询2022年入职的员工')">
+                                        查询2022年入职的员工
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -173,6 +187,20 @@
         function setQuery(query) {
             document.getElementById('queryInput').value = query;
         }
+
+        // 处理折叠按钮图标旋转
+        document.addEventListener('DOMContentLoaded', function() {
+            const collapseElement = document.getElementById('exampleQueriesCollapse');
+            const collapseIcon = document.getElementById('collapseIcon');
+            
+            collapseElement.addEventListener('show.bs.collapse', function () {
+                collapseIcon.style.transform = 'rotate(180deg)';
+            });
+            
+            collapseElement.addEventListener('hide.bs.collapse', function () {
+                collapseIcon.style.transform = 'rotate(0deg)';
+            });
+        });
 
         // 显示数据库结构
         function showSchema() {

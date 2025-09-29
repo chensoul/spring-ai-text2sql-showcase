@@ -27,11 +27,12 @@ spring:
       chat:
         options:
           model: deepseek-chat
+          temperature: 0.1
 
 # 日志配置
 logging:
   level:
-    org.springframework.ai: DEBUG
+    org.springframework.ai: ERROR
     com.example: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
