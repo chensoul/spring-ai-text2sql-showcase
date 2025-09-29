@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Spring AI Text2SQL 演示</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet">
+    <style>
+        .query-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        .result-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        .sql-code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 1rem 0;
+        }
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .loading {
+            display: none;
+        }
+        .example-queries {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .example-query {
+            cursor: pointer;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        .example-query:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <!-- 头部 -->
+                <div class="query-container text-center">
+                    <h1 class="display-4 mb-4">
+                        <i class="fas fa-robot"></i> Spring AI Text2SQL
+                    </h1>
+                    <p class="lead">使用自然语言查询数据库，让 AI 为您生成 SQL 语句</p>
+                </div>
+
+                <!-- 查询输入区域 -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-search"></i> 自然语言查询</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="queryForm">
+                                    <div class="mb-3">
+                                        <label for="queryInput" class="form-label">请输入您的查询需求：</label>
+                                        <textarea class="form-control" id="queryInput" rows="3" 
+                                                placeholder="例如：查询所有技术部的员工信息"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <i class="fas fa-magic me-2"></i>生成 SQL 查询
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- 示例查询 -->
+                        <div class="example-queries">
+                            <h6><i class="fas fa-lightbulb"></i> 示例查询（点击使用）：</h6>
+                            <div class="example-query" onclick="setQuery('查询所有员工的姓名和工资')">
+                                查询所有员工的姓名和工资
+                            </div>
+                            <div class="example-query" onclick="setQuery('找出工资最高的前5名员工')">
+                                找出工资最高的前5名员工
+                            </div>
+                            <div class="example-query" onclick="setQuery('统计每个部门的员工数量')">
+                                统计每个部门的员工数量
+                            </div>
+                            <div class="example-query" onclick="setQuery('查询正在进行中的项目信息')">
+                                查询正在进行中的项目信息
+                            </div>
+                            <div class="example-query" onclick="setQuery('找出参与项目最多的5名员工')">
+                                找出参与项目最多的5名员工
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-database"></i> 数据库结构</h6>
+                            </div>
+                            <div class="card-body">
+                                <small class="text-muted">
+                                    <strong>主要表：</strong><br>
+                                    • employees：员工表<br>
+                                    • projects：项目表<br>
+                                    • departments：部门表<br>
+                                    • project_members：项目成员关系表<br>
+                                </small>
+                                <button class="btn btn-sm btn-outline-info mt-2" onclick="showSchema()">
+                                    查看详细结构
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 结果显示区域 -->
+                <div id="resultContainer" class="result-container" style="display: none;">
+                    <h5><i class="fas fa-chart-line"></i> 查询结果</h5>
+                    <div id="resultContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据库结构模态框 -->
+    <div class="modal fade" id="schemaModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">数据库结构详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="schemaContent" class="sql-code"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+
+    <script>
+        // 设置查询内容
+        function setQuery(query) {
+            document.getElementById('queryInput').value = query;
+        }
+
+        // 显示数据库结构
+        function showSchema() {
+            fetch('/api/schema')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('schemaContent').textContent = data.schema;
+                    new bootstrap.Modal(document.getElementById('schemaModal')).show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取数据库结构失败');
+                });
+        }
+
+        // 处理查询表单提交
+        document.getElementById('queryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const query = document.getElementById('queryInput').value.trim();
+            if (!query) {
+                alert('请输入查询内容');
+                return;
+            }
+
+            // 显示加载状态
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const loading = submitBtn.querySelector('.loading');
+            loading.style.display = 'inline-block';
+            submitBtn.disabled = true;
+
+            // 发送查询请求
+            fetch('/api/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayResult(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                displayResult({
+                    success: false,
+                    error: '查询失败：' + error.message
+                });
+            })
+            .finally(() => {
+                // 隐藏加载状态
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            });
+        });
+
+        // 显示查询结果
+        function displayResult(data) {
+            const resultContainer = document.getElementById('resultContainer');
+            const resultContent = document.getElementById('resultContent');
+            
+            if (data.success) {
+                let html = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> 查询成功！找到 ${data.count} 条记录
+                    </div>
+                    <h6>生成的 SQL 语句：</h6>
+                    <pre class="sql-code">${data.sql}</pre>
+                `;
+                
+                if (data.data && data.data.length > 0) {
+                    html += '<h6>查询结果：</h6>';
+                    html += '<div class="table-container">';
+                    html += '<table class="table table-striped table-hover">';
+                    
+                    // 表头
+                    const firstRow = data.data[0];
+                    html += '<thead><tr>';
+                    for (const key in firstRow) {
+                        html += `<th>${key}</th>`;
+                    }
+                    html += '</tr></thead>';
+                    
+                    // 数据行
+                    html += '<tbody>';
+                    data.data.forEach(row => {
+                        html += '<tr>';
+                        for (const key in row) {
+                            html += `<td>${row[key] || ''}</td>`;
+                        }
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table></div>';
+                } else {
+                    html += '<div class="alert alert-info">没有找到匹配的数据</div>';
+                }
+                
+                resultContent.innerHTML = html;
+            } else {
+                resultContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> 查询失败：${data.error}
+                    </div>
+                `;
+            }
+            
+            resultContainer.style.display = 'block';
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
