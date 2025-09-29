@@ -36,18 +36,16 @@ public class StepBasedText2SqlService {
             
             判断规则：
             1. 数据库查询特征词：查询、统计、查找、获取、显示、列出、计算、汇总、分析、筛选、排序、分组、连接、关联
-            2. 数据操作词：SELECT、WHERE、ORDER BY、GROUP BY、COUNT、SUM、AVG、MAX、MIN、JOIN
-            3. 业务实体词：员工、部门、项目、客户、订单、产品、销售、财务、人事、工资、薪资
-            4. 非数据库查询特征：问候语、自我介绍、聊天、天气、新闻、娱乐、技术问题、编程问题、系统问题
+            2. 非数据库查询特征：问候语、自我介绍、聊天、天气、新闻、娱乐、技术问题、编程问题、系统问题
             
-            当前数据库包含以下表：
-            {availableTables}
+            请使用 getDatabaseSchema MCP工具查询数据库表结构
             
             判断流程：
             1. 检查是否包含数据库查询特征词
-            2. 检查是否涉及业务实体（员工、部门、项目等）
+            2. 检查是否涉及数据库里面的业务实体
             3. 检查是否包含数据操作意图
             4. 排除明显的非数据库查询内容
+            5. 使用MCP工具查询实际表结构，判断查询是否可行
             
             请严格按照以下格式返回，不要包含任何其他内容：
             
@@ -65,6 +63,7 @@ public class StepBasedText2SqlService {
             2. 对于数据库查询，改写后的描述要简洁明了，突出查询的核心需求
             3. 使用标准的数据库查询术语
             4. 不要包含任何分析过程或额外说明
+            5. 必须使用MCP工具查询数据库结构后再做判断
             """;
 
     // 步骤2: 数据表选取提示模板
@@ -210,117 +209,31 @@ public class StepBasedText2SqlService {
     }
 
     /**
-     * 预处理用户查询，进行初步判断
-     */
-    private boolean isDatabaseQuery(String userQuery) {
-        String query = userQuery.toLowerCase().trim();
-        
-        // 明显的非数据库查询关键词（高优先级）
-        String[] nonQueryKeywords = {
-            "你好", "hello", "hi", "再见", "bye", "谢谢", "thank you",
-            "你是谁", "what are you", "介绍", "introduce", "自我介绍",
-            "天气", "weather", "新闻", "news", "娱乐", "entertainment",
-            "聊天", "chat", "对话", "conversation", "闲聊", "small talk",
-            "编程", "programming", "代码", "code", "技术", "technology",
-            "系统", "system", "配置", "config", "设置", "settings",
-            "帮助", "help", "说明", "explain", "教程", "tutorial",
-            "时间", "time", "日期", "date", "今天", "today", "明天", "tomorrow"
-        };
-        
-        // 检查非数据库查询关键词
-        for (String keyword : nonQueryKeywords) {
-            if (query.contains(keyword)) {
-                System.out.println("预处理判断：发现非数据库查询关键词 - " + keyword);
-                return false;
-            }
-        }
-        
-        // 数据库查询特征词（按重要性排序）
-        String[] highPriorityKeywords = {
-            "查询", "统计", "查找", "获取", "显示", "列出", "计算", "汇总", "分析", "筛选", "排序", "分组",
-            "select", "where", "order by", "group by", "count", "sum", "avg", "max", "min", "join"
-        };
-        
-        String[] businessKeywords = {
-            "员工", "部门", "项目", "客户", "订单", "产品", "销售", "财务", "人事", "工资", "薪资",
-            "表", "table", "数据", "data", "记录", "record", "信息", "information"
-        };
-        
-        // 检查高优先级关键词
-        for (String keyword : highPriorityKeywords) {
-            if (query.contains(keyword)) {
-                System.out.println("预处理判断：发现数据库查询关键词 - " + keyword);
-                return true;
-            }
-        }
-        
-        // 检查业务关键词
-        for (String keyword : businessKeywords) {
-            if (query.contains(keyword)) {
-                System.out.println("预处理判断：发现业务关键词 - " + keyword);
-                return true;
-            }
-        }
-        
-        // 检查查询长度和结构
-        if (query.length() < 3) {
-            System.out.println("预处理判断：查询过短");
-            return false;
-        }
-        
-        // 检查是否包含问号（可能是问题）
-        if (query.contains("?") || query.contains("？")) {
-            System.out.println("预处理判断：包含问号，可能是问题");
-            return true;
-        }
-        
-        System.out.println("预处理判断：无法确定，交给AI判断");
-        return true; // 默认交给AI判断
-    }
-
-    /**
      * 执行步骤1: 问题改写
      */
     private Text2SqlStepResult.StepResult executeStep1(String userQuery) {
         try {
             System.out.println("\n执行步骤1: 问题改写");
 
-            // 预处理：先进行简单的关键词匹配判断
-            boolean isDbQuery = isDatabaseQuery(userQuery);
-            
-            if (!isDbQuery) {
-                // 预处理判断为非数据库查询，直接返回提示
-                Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-                stepResult.setCompleted(false);
-                stepResult.setContent("提示：请输入与数据库查询相关的问题，例如\"查询员工信息\"、\"统计销售数据\"等");
-                stepResult.setStatus("error");
-                stepResult.setErrorMessage("输入内容与数据库查询无关");
-                System.out.println("预处理判断：非数据库查询");
-                return stepResult;
-            }
-
-            // 获取可用表信息
-            String availableTables = getAvailableTablesInfo();
-            
             PromptTemplate promptTemplate = new PromptTemplate(STEP1_PROMPT);
             String promptText = promptTemplate.create(Map.of(
-                "userQuery", userQuery,
-                "availableTables", availableTables
+                    "userQuery", userQuery
             )).getContents();
 
+            // 让AI使用工具查询数据库表结构
             String result = mcpChatClient.prompt()
                     .user(promptText)
                     .call()
                     .content();
 
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            
+
             // 检查是否返回了提示信息
             if (result != null && result.trim().startsWith("提示：")) {
                 stepResult.setCompleted(false);
                 stepResult.setContent(result.trim());
                 stepResult.setStatus("error");
-                
+
                 // 根据提示内容设置不同的错误信息
                 if (result.contains("请输入与数据库查询相关的问题")) {
                     stepResult.setErrorMessage("输入内容与数据库查询无关");
@@ -329,11 +242,11 @@ public class StepBasedText2SqlService {
                 } else {
                     stepResult.setErrorMessage("输入内容不符合要求");
                 }
-                
+
                 System.out.println("AI判断结果：" + result);
                 return stepResult;
             }
-            
+
             stepResult.setCompleted(true);
             stepResult.setContent(result != null ? result.trim() : "");
             stepResult.setStatus("success");
@@ -352,42 +265,6 @@ public class StepBasedText2SqlService {
         }
     }
 
-    /**
-     * 获取可用表信息
-     */
-    private String getAvailableTablesInfo() {
-        try {
-            // 使用 DatabaseTool 获取表信息
-            String tableNames = mcpChatClient.prompt()
-                    .user("请使用 getTableNames() 工具获取所有可用表名")
-                    .call()
-                    .content();
-            
-            // 解析表名并获取详细信息
-            StringBuilder tableInfo = new StringBuilder();
-            String[] tables = tableNames.split(",");
-            
-            for (String table : tables) {
-                table = table.trim();
-                if (!table.isEmpty()) {
-                    String tableSchema = mcpChatClient.prompt()
-                            .user("请使用 getTableSchema(" + table + ") 工具获取表 " + table + " 的结构信息")
-                            .call()
-                            .content();
-                    
-                    tableInfo.append("- ").append(table).append("：").append(tableSchema).append("\n");
-                }
-            }
-            
-            return tableInfo.toString();
-        } catch (Exception e) {
-            log.warn("获取表信息失败，使用默认信息", e);
-            return "- employees（员工表）：包含员工基本信息、部门、职位、工资等\n" +
-                   "- departments（部门表）：包含部门信息\n" +
-                   "- projects（项目表）：包含项目信息\n" +
-                   "- project_members（项目成员表）：包含项目成员关系";
-        }
-    }
 
     /**
      * 执行步骤2: 数据表选取

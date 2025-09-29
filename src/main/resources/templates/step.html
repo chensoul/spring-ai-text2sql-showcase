@@ -484,45 +484,51 @@
 
         // 显示步骤结果
         function displayStepResults(data) {
-            if (data.success) {
-                // 查询成功，显示步骤容器
-                document.getElementById('stepsContainer').style.display = 'block';
+            // 总是显示步骤容器，无论成功还是失败
+            document.getElementById('stepsContainer').style.display = 'block';
+            
+            // 等待所有步骤完成后一次性显示
+            setTimeout(() => {
+                // 步骤1: 问题改写
+                if (data.step1ProblemRewriting) {
+                    const status = data.step1ProblemRewriting.status === 'error' ? 'error' : 'success';
+                    updateStepStatus('step1', status, data.step1ProblemRewriting.content);
+                }
+
+                // 步骤2: 数据表选取
+                if (data.step2TableSelection) {
+                    const status = data.step2TableSelection.status === 'error' ? 'error' : 'success';
+                    updateStepStatus('step2', status, data.step2TableSelection.content);
+                }
+
+                // 步骤3: 信息推理
+                if (data.step3InformationInference) {
+                    const status = data.step3InformationInference.status === 'error' ? 'error' : 'success';
+                    updateStepStatus('step3', status, data.step3InformationInference.content);
+                }
+
+                // 步骤4: SQL生成
+                if (data.step4SqlGeneration) {
+                    const status = data.step4SqlGeneration.status === 'error' ? 'error' : 'success';
+                    updateStepStatus('step4', status, data.step4SqlGeneration.content);
+                }
+
+                // 步骤5: SQL执行
+                if (data.step5SqlExecution) {
+                    const status = data.step5SqlExecution.status === 'error' ? 'error' : 'success';
+                    updateStepStatus('step5', status, data.step5SqlExecution.content);
+                }
+
+                // 显示最终结果
+                if (data.finalData && data.finalData.length > 0) {
+                    displayFinalResult(data.finalData);
+                }
                 
-                // 等待所有步骤完成后一次性显示
-                setTimeout(() => {
-                    // 步骤1: 问题改写
-                    if (data.step1ProblemRewriting) {
-                        updateStepStatus('step1', 'success', data.step1ProblemRewriting.content);
-                    }
-
-                    // 步骤2: 数据表选取
-                    if (data.step2TableSelection) {
-                        updateStepStatus('step2', 'success', data.step2TableSelection.content);
-                    }
-
-                    // 步骤3: 信息推理
-                    if (data.step3InformationInference) {
-                        updateStepStatus('step3', 'success', data.step3InformationInference.content);
-                    }
-
-                    // 步骤4: SQL生成
-                    if (data.step4SqlGeneration) {
-                        updateStepStatus('step4', 'success', data.step4SqlGeneration.content);
-                    }
-
-                    // 步骤5: SQL执行
-                    if (data.step5SqlExecution) {
-                        updateStepStatus('step5', 'success', data.step5SqlExecution.content);
-                    }
-
-                    // 显示最终结果
-                    if (data.finalData && data.finalData.length > 0) {
-                        displayFinalResult(data.finalData);
-                    }
-                }, 100); // 短暂延迟确保所有数据都已接收
-            } else {
-                displayError(data.errorMessage || '处理失败');
-            }
+                // 如果整体失败，显示错误信息
+                if (!data.success && data.error) {
+                    displayError(data.error);
+                }
+            }, 100); // 短暂延迟确保所有数据都已接收
         }
 
         // 格式化步骤内容
