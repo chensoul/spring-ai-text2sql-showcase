@@ -34,13 +34,14 @@ public class StepBasedText2SqlService {
             
             用户查询：{userQuery}
             
-            请提供：
-            1. 改写后的查询描述
-            2. 查询意图分析
+            请严格按照以下格式返回，不要包含任何其他内容：
+            问题改写，改写为：[改写后的查询描述]
             
-            格式：
-            改写为：[改写后的查询描述]
-            意图：[查询意图分析]
+            要求：
+            1. 必须严格按照"问题改写，改写为："的格式
+            2. 改写后的描述要简洁明了，突出查询的核心需求
+            3. 使用标准的数据库查询术语
+            4. 不要包含任何分析过程或额外说明
             """;
 
     // 步骤2: 数据表选取提示模板
@@ -49,14 +50,15 @@ public class StepBasedText2SqlService {
             
             改写后的查询：{rewrittenQuery}
             
+            请严格按照以下格式返回，不要包含任何其他内容：
+            数据表选取，选择表为：表名1, 表名2, ...
+            
             请：
             1. 使用 getTableNames() 获取所有可用表
             2. 分析查询需求，选择相关表
             3. 使用 getTableSchema(tableName) 获取选中表的结构
-            
-            格式：
-            选择表为：[表名1, 表名2, ...]
-            选择理由：[选择理由]
+            4. 必须严格按照"数据表选取，选择表为："的格式
+            5. 不要包含任何分析过程或额外说明
             """;
 
     // 步骤3: 信息推理提示模板
@@ -66,17 +68,20 @@ public class StepBasedText2SqlService {
             查询需求：{rewrittenQuery}
             选中表：{selectedTables}
             
-            请分析：
+            请严格按照以下格式返回：
+            信息推理，本次推理参考业务信息是：
+            
+            然后提供详细的推理分析，包括：
             1. 需要哪些字段
             2. 需要什么条件
             3. 表之间的关联关系
             4. 业务逻辑推理
+            5. 时间范围、状态字段等业务规则
             
-            格式：
-            字段需求：[需要的字段]
-            条件需求：[WHERE条件]
-            关联关系：[JOIN关系]
-            业务推理：[业务逻辑分析]
+            要求：
+            1. 第一行必须是"信息推理，本次推理参考业务信息是："开头
+            2. 后续内容要详细说明推理过程和业务规则
+            3. 不要包含任何其他格式或额外说明
             """;
 
     // 步骤4: SQL生成提示模板
@@ -87,16 +92,29 @@ public class StepBasedText2SqlService {
             选中表：{selectedTables}
             推理结果：{inferenceResult}
             
-            请生成标准的SQL查询语句，要求：
-            1. 只使用SELECT查询
-            2. 使用正确的表名和字段名
-            3. 添加适当的WHERE条件
-            4. 使用LIMIT限制结果数量（最多1000条）
-            5. 确保SQL语法正确
+            请严格按照以下格式返回：
             
-            格式：
-            生成SQL查询语句为：
-            [SQL语句]
+            查询SQL生成，生成SQL查询语句为：
+            
+            ```sql
+            [生成的SQL语句]
+            ```
+            
+            **SQL智能注释**
+            > 1. [对SQL语句的详细解释]
+            > 2. [对各个子句的说明]
+            > 3. [业务逻辑的解释]
+            
+            要求：
+            1. 第一行必须是"查询SQL生成，生成SQL查询语句为："开头
+            2. 生成的SQL语句必须用"```sql"和"```"包围
+            3. 生成标准的SQL查询语句，只使用SELECT查询
+            4. 使用正确的表名和字段名
+            5. 添加适当的WHERE条件
+            6. 使用LIMIT限制结果数量（最多1000条）
+            7. 确保SQL语法正确
+            8. 提供详细的SQL智能注释
+            9. 不要包含任何其他格式或额外说明
             """;
 
     // 步骤5: SQL执行提示模板
@@ -105,7 +123,16 @@ public class StepBasedText2SqlService {
             
             {sqlQuery}
             
-            请执行查询并返回结果。
+            请严格按照以下格式返回：
+            执行SQL，执行完成，返回了X条记录
+            
+            然后显示查询结果的详细信息。
+            
+            要求：
+            1. 第一行必须是"执行SQL，执行完成，返回了X条记录"格式
+            2. 执行查询并返回结果
+            3. 显示查询结果的详细信息
+            4. 不要包含任何其他格式或额外说明
             """;
 
     /**
@@ -164,7 +191,6 @@ public class StepBasedText2SqlService {
         try {
             System.out.println("\n执行步骤1: 问题改写");
 
-            // 使用 PromptTemplate 进行问题改写
             PromptTemplate promptTemplate = new PromptTemplate(STEP1_PROMPT);
             String promptText = promptTemplate.create(Map.of("userQuery", userQuery)).getContents();
 
@@ -175,8 +201,7 @@ public class StepBasedText2SqlService {
 
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(true);
-            stepResult.setDescription("问题改写");
-            stepResult.setContent(result);
+            stepResult.setContent(result.trim());
             stepResult.setStatus("success");
 
             System.out.println(result);
@@ -186,7 +211,7 @@ public class StepBasedText2SqlService {
             log.error("步骤1执行失败", e);
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(false);
-            stepResult.setDescription("问题改写");
+            stepResult.setContent("问题改写，改写失败：" + e.getMessage());
             stepResult.setStatus("error");
             stepResult.setErrorMessage(e.getMessage());
             return stepResult;
@@ -200,7 +225,6 @@ public class StepBasedText2SqlService {
         try {
             System.out.println("\n执行步骤2: 数据表选取");
 
-            // 使用 PromptTemplate 进行数据表选取
             PromptTemplate promptTemplate = new PromptTemplate(STEP2_PROMPT);
             String promptText = promptTemplate.create(Map.of("rewrittenQuery", rewrittenQuery)).getContents();
 
@@ -211,8 +235,7 @@ public class StepBasedText2SqlService {
 
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(true);
-            stepResult.setDescription("数据表选取");
-            stepResult.setContent(result);
+            stepResult.setContent(result.trim());
             stepResult.setStatus("success");
 
             System.out.println(result);
@@ -222,7 +245,7 @@ public class StepBasedText2SqlService {
             log.error("步骤2执行失败", e);
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(false);
-            stepResult.setDescription("数据表选取");
+            stepResult.setContent("数据表选取，选择失败：" + e.getMessage());
             stepResult.setStatus("error");
             stepResult.setErrorMessage(e.getMessage());
             return stepResult;
@@ -236,7 +259,6 @@ public class StepBasedText2SqlService {
         try {
             System.out.println("\n执行步骤3: 信息推理");
 
-            // 使用 PromptTemplate 进行信息推理
             PromptTemplate promptTemplate = new PromptTemplate(STEP3_PROMPT);
             String promptText = promptTemplate.create(Map.of(
                     "rewrittenQuery", rewrittenQuery,
@@ -250,8 +272,7 @@ public class StepBasedText2SqlService {
 
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(true);
-            stepResult.setDescription("信息推理");
-            stepResult.setContent(result);
+            stepResult.setContent(result.trim());
             stepResult.setStatus("success");
 
             System.out.println(result);
@@ -261,7 +282,7 @@ public class StepBasedText2SqlService {
             log.error("步骤3执行失败", e);
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(false);
-            stepResult.setDescription("信息推理");
+            stepResult.setContent("信息推理，推理失败：" + e.getMessage());
             stepResult.setStatus("error");
             stepResult.setErrorMessage(e.getMessage());
             return stepResult;
@@ -276,7 +297,6 @@ public class StepBasedText2SqlService {
         try {
             System.out.println("\n执行步骤4: SQL生成");
 
-            // 使用 PromptTemplate 进行 SQL 生成
             PromptTemplate promptTemplate = new PromptTemplate(STEP4_PROMPT);
             String promptText = promptTemplate.create(Map.of(
                     "rewrittenQuery", rewrittenQuery,
@@ -299,8 +319,7 @@ public class StepBasedText2SqlService {
 
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(true);
-            stepResult.setDescription("查询SQL生成");
-            stepResult.setContent("生成SQL查询语句为：" + cleanedSql);
+            stepResult.setContent(result.trim());
             stepResult.setStatus("success");
 
             System.out.println(cleanedSql);
@@ -310,7 +329,7 @@ public class StepBasedText2SqlService {
             log.error("步骤4执行失败", e);
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(false);
-            stepResult.setDescription("查询SQL生成");
+            stepResult.setContent("查询SQL生成，生成失败：" + e.getMessage());
             stepResult.setStatus("error");
             stepResult.setErrorMessage(e.getMessage());
             return stepResult;
@@ -329,7 +348,6 @@ public class StepBasedText2SqlService {
                 throw new IllegalArgumentException("无法从内容中提取有效的SQL语句");
             }
 
-            // 使用 PromptTemplate 执行 SQL 查询
             PromptTemplate promptTemplate = new PromptTemplate(STEP5_PROMPT);
             String promptText = promptTemplate.create(Map.of("sqlQuery", sql)).getContents();
 
@@ -340,8 +358,7 @@ public class StepBasedText2SqlService {
 
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(true);
-            stepResult.setDescription("执行SQL");
-            stepResult.setContent(result);
+            stepResult.setContent(result.trim());
             stepResult.setStatus("success");
 
             System.out.println(result);
@@ -351,7 +368,7 @@ public class StepBasedText2SqlService {
             log.error("步骤5执行失败", e);
             Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
             stepResult.setCompleted(false);
-            stepResult.setDescription("执行SQL");
+            stepResult.setContent("执行SQL，执行失败：" + e.getMessage());
             stepResult.setStatus("error");
             stepResult.setErrorMessage(e.getMessage());
             return stepResult;
@@ -377,33 +394,6 @@ public class StepBasedText2SqlService {
             log.warn("无法提取结构化数据: {}", e.getMessage());
             return List.of();
         }
-    }
-
-    /**
-     * 从内容中提取字段需求
-     */
-    private String extractFieldRequirements(String content) {
-        Pattern pattern = Pattern.compile("字段需求：([^\\n]+)");
-        Matcher matcher = pattern.matcher(content);
-        return matcher.find() ? matcher.group(1).trim() : "所有字段";
-    }
-
-    /**
-     * 从内容中提取条件需求
-     */
-    private String extractConditionRequirements(String content) {
-        Pattern pattern = Pattern.compile("条件需求：([^\\n]+)");
-        Matcher matcher = pattern.matcher(content);
-        return matcher.find() ? matcher.group(1).trim() : "无特殊条件";
-    }
-
-    /**
-     * 从内容中提取关联关系
-     */
-    private String extractJoinRelations(String content) {
-        Pattern pattern = Pattern.compile("关联关系：([^\\n]+)");
-        Matcher matcher = pattern.matcher(content);
-        return matcher.find() ? matcher.group(1).trim() : "无关联关系";
     }
 
     /**

@@ -5,6 +5,7 @@ import com.example.text2sql.service.Text2SqlStepResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -15,12 +16,21 @@ import java.util.Map;
  * 提供5个步骤的结构化输出接口
  */
 @Slf4j
-@RestController
-@RequestMapping("/api/steps")
+@Controller
 @RequiredArgsConstructor
 public class StepBasedText2SqlController {
 
     private final StepBasedText2SqlService stepBasedText2SqlService;
+
+    /**
+     * 显示步骤化 Text2SQL 页面
+     *
+     * @return 步骤化页面视图
+     */
+    @GetMapping("/step")
+    public String showStepsPage() {
+        return "step";
+    }
 
     /**
      * 处理步骤化查询请求
@@ -28,7 +38,8 @@ public class StepBasedText2SqlController {
      * @param request 查询请求
      * @return 包含5个步骤的查询结果
      */
-    @PostMapping("/query")
+    @PostMapping("/api/steps/query")
+    @ResponseBody
     public Text2SqlStepResult queryWithSteps(@RequestBody Map<String, String> request) {
         String query = request.get("query");
 

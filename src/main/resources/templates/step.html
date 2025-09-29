@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>步骤化 Text2SQL 演示</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet">
+    <style>
+        .query-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .step-card {
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #e9ecef;
+        }
+        .step-card.active {
+            border-left-color: #007bff;
+        }
+        .step-card.completed {
+            border-left-color: #28a745;
+            background-color: #f8fff9;
+        }
+        .step-card.failed {
+            border-left-color: #dc3545;
+            background-color: #fff8f8;
+        }
+        .step-header {
+            cursor: pointer;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+        }
+        .step-content {
+            padding: 0.75rem;
+            background: white;
+            border-radius: 5px;
+            margin-top: 0.25rem;
+        }
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: #6c757d;
+            color: white;
+            border-radius: 50%;
+            margin-right: 1rem;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .step-number.active {
+            background: #007bff;
+        }
+        .step-number.completed {
+            background: #28a745;
+        }
+        .step-number.failed {
+            background: #dc3545;
+        }
+        .sql-code {
+            background: #f8f9fa;
+            color: #333;
+            padding: 0.75rem;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 0.5rem 0;
+            border: 1px solid #e9ecef;
+        }
+        .blockquote {
+            background: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            padding: 0.5rem 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 0 5px 5px 0;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .loading {
+            display: none;
+        }
+        .progress-container {
+            margin-bottom: 2rem;
+        }
+        .example-queries {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .example-query {
+            cursor: pointer;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .example-query:hover {
+            background: #f0f0f0;
+        }
+        .status-icon {
+            font-size: 1.2em;
+            padding: 0.3rem;
+            border-radius: 50%;
+            background: white;
+        }
+        .step-description {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-top: 0.5rem;
+        }
+        .result-data {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .step-brief-info {
+            background: #e3f2fd;
+            padding: 0.75rem;
+            border-radius: 5px;
+            border-left: 4px solid #2196f3;
+            font-size: 1.1em;
+        }
+        .step-detailed-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+            margin-top: 0.5rem;
+        }
+        .step-detailed-info pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 0.5rem 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <!-- 头部 -->
+                <div class="query-container">
+                    <h1 class="display-4 mb-4">
+                        <i class="fas fa-robot"></i> 步骤化 Text2SQL 演示
+                    </h1>
+                    <p class="lead">体验 AI 将自然语言转换为 SQL 的5个详细步骤</p>
+                </div>
+
+                <!-- 查询输入区域 -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-search"></i> 自然语言查询</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="queryForm">
+                                    <div class="mb-3">
+                                        <label for="queryInput" class="form-label">请输入您的查询需求：</label>
+                                        <textarea class="form-control" id="queryInput" rows="2"
+                                                placeholder="例如：查询所有技术部的员工信息">查询员工表中工资最高的前5条记录</textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <i class="fas fa-magic me-2"></i>查询
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- 示例查询 -->
+                        <div class="example-queries">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> 示例查询（点击使用）</h6>
+                                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#exampleQueriesCollapse" aria-expanded="false" 
+                                        aria-controls="exampleQueriesCollapse">
+                                    <i class="fas fa-chevron-down" id="collapseIcon"></i>
+                                </button>
+                            </div>
+                            <div class="collapse" id="exampleQueriesCollapse">
+                                <div class="mt-3">
+                                    <div class="example-query" onclick="setQuery('查询所有员工的姓名和工资')">
+                                        查询所有员工的姓名和工资
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('找出工资最高的前5名员工')">
+                                        找出工资最高的前5名员工
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('统计每个部门的员工数量')">
+                                        统计每个部门的员工数量
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('查询正在进行中的项目信息')">
+                                        查询正在进行中的项目信息
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('找出参与项目最多的5名员工')">
+                                        找出参与项目最多的5名员工
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('计算所有员工的平均工资')">
+                                        计算所有员工的平均工资
+                                    </div>
+                                    <div class="example-query" onclick="setQuery('查询2022年入职的员工')">
+                                        查询2022年入职的员工
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-info-circle"></i> 处理步骤说明</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="step-description">
+                                    <strong>步骤1：问题改写</strong><br>
+                                    将用户的自然语言查询改写为更清晰、更具体的查询描述
+                                </div>
+                                <div class="step-description">
+                                    <strong>步骤2：数据表选取</strong><br>
+                                    使用 MCP 工具选择相关的数据表
+                                </div>
+                                <div class="step-description">
+                                    <strong>步骤3：信息推理</strong><br>
+                                    分析字段需求、条件需求和关联关系
+                                </div>
+                                <div class="step-description">
+                                    <strong>步骤4：SQL生成</strong><br>
+                                    基于分析结果生成标准的 SQL 查询语句
+                                </div>
+                                <div class="step-description">
+                                    <strong>步骤5：SQL执行</strong><br>
+                                    执行生成的 SQL 查询并返回结果
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- 步骤结果区域 -->
+                <div id="stepsContainer" style="display: none;">
+                    <!-- 步骤1: 问题改写 -->
+                    <div class="card step-card" id="step1Card">
+                        <div class="step-header" onclick="toggleStep('step1')">
+                            <span class="step-number" id="step1Number">1</span>
+                            <strong>问题改写</strong>
+                            <span class="status-icon" id="step1Status"></span>
+                        </div>
+                        <div class="step-content" id="step1Content" style="display: none;">
+                            <div id="step1Result"></div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤2: 数据表选取 -->
+                    <div class="card step-card" id="step2Card">
+                        <div class="step-header" onclick="toggleStep('step2')">
+                            <span class="step-number" id="step2Number">2</span>
+                            <strong>数据表选取</strong>
+                            <span class="status-icon" id="step2Status"></span>
+                        </div>
+                        <div class="step-content" id="step2Content" style="display: none;">
+                            <div id="step2Result"></div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤3: 信息推理 -->
+                    <div class="card step-card" id="step3Card">
+                        <div class="step-header" onclick="toggleStep('step3')">
+                            <span class="step-number" id="step3Number">3</span>
+                            <strong>信息推理</strong>
+                            <span class="status-icon" id="step3Status"></span>
+                        </div>
+                        <div class="step-content" id="step3Content" style="display: none;">
+                            <div id="step3Result"></div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤4: SQL生成 -->
+                    <div class="card step-card" id="step4Card">
+                        <div class="step-header" onclick="toggleStep('step4')">
+                            <span class="step-number" id="step4Number">4</span>
+                            <strong>查询SQL生成</strong>
+                            <span class="status-icon" id="step4Status"></span>
+                        </div>
+                        <div class="step-content" id="step4Content" style="display: none;">
+                            <div id="step4Result"></div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤5: SQL执行 -->
+                    <div class="card step-card" id="step5Card">
+                        <div class="step-header" onclick="toggleStep('step5')">
+                            <span class="step-number" id="step5Number">5</span>
+                            <strong>执行SQL</strong>
+                            <span class="status-icon" id="step5Status"></span>
+                        </div>
+                        <div class="step-content" id="step5Content" style="display: none;">
+                            <div id="step5Result"></div>
+                        </div>
+                    </div>
+
+                    <!-- 最终结果 -->
+                    <div class="card mt-4" id="finalResultCard" style="display: none;">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-line"></i> 最终查询结果</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="finalResult"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+
+    <script>
+        // 设置查询内容
+        function setQuery(query) {
+            document.getElementById('queryInput').value = query;
+        }
+
+        // 处理折叠按钮图标旋转
+        document.addEventListener('DOMContentLoaded', function() {
+            const collapseElement = document.getElementById('exampleQueriesCollapse');
+            const collapseIcon = document.getElementById('collapseIcon');
+            
+            if (collapseElement && collapseIcon) {
+                collapseElement.addEventListener('show.bs.collapse', function () {
+                    collapseIcon.style.transform = 'rotate(180deg)';
+                });
+                
+                collapseElement.addEventListener('hide.bs.collapse', function () {
+                    collapseIcon.style.transform = 'rotate(0deg)';
+                });
+            }
+        });
+
+        // 切换步骤显示/隐藏
+        function toggleStep(stepId) {
+            const content = document.getElementById(stepId + 'Content');
+            const result = document.getElementById(stepId + 'Result');
+            
+            // 只有当有详细信息时才允许折叠
+            if (result.innerHTML.trim()) {
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                } else {
+                    content.style.display = 'none';
+                }
+            }
+        }
+
+        // 更新步骤状态
+        function updateStepStatus(stepId, status, content) {
+            const card = document.getElementById(stepId + 'Card');
+            const number = document.getElementById(stepId + 'Number');
+            const statusIcon = document.getElementById(stepId + 'Status');
+            const resultDiv = document.getElementById(stepId + 'Result');
+            const contentDiv = document.getElementById(stepId + 'Content');
+            const titleStrong = card.querySelector('.step-header strong');
+
+            // 移除所有状态类
+            card.classList.remove('active', 'completed', 'failed');
+            number.classList.remove('active', 'completed', 'failed');
+
+            if (status === 'success') {
+                card.classList.add('completed');
+                number.classList.add('completed');
+                statusIcon.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
+            } else if (status === 'error') {
+                card.classList.add('failed');
+                number.classList.add('failed');
+                statusIcon.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
+            } else if (status === 'processing') {
+                card.classList.add('active');
+                number.classList.add('active');
+                statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i>';
+            }
+
+            if (content) {
+                // 解析内容，分离第一行和其余内容
+                const lines = content.split('\n');
+                const firstLine = lines[0] || '';
+                const detailedInfo = lines.slice(1).join('\n').trim();
+                
+                // 将第一行内容显示在标题中
+                if (firstLine) {
+                    titleStrong.innerHTML = convertMarkdownToHtml(firstLine);
+                }
+                
+                // 如果有详细信息，显示在content区域并允许折叠
+                if (detailedInfo) {
+                    resultDiv.innerHTML = convertMarkdownToHtml(detailedInfo);
+                    contentDiv.style.display = 'block';
+                } else {
+                    // 如果没有详细信息，隐藏content区域
+                    contentDiv.style.display = 'none';
+                }
+            }
+            
+            // 隐藏状态图标
+            statusIcon.style.display = 'none';
+        }
+
+
+        // 处理查询表单提交
+        document.getElementById('queryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const query = document.getElementById('queryInput').value.trim();
+            if (!query) {
+                alert('请输入查询内容');
+                return;
+            }
+
+            // 重置状态
+            resetSteps();
+            
+            // 隐藏步骤容器，等待查询成功后再显示
+            document.getElementById('stepsContainer').style.display = 'none';
+            document.getElementById('finalResultCard').style.display = 'none';
+
+            // 显示加载状态
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const loading = submitBtn.querySelector('.loading');
+            loading.style.display = 'inline-block';
+            submitBtn.disabled = true;
+
+            // 发送查询请求
+            fetch('/api/steps/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayStepResults(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                displayError('查询失败：' + error.message);
+            })
+            .finally(() => {
+                // 隐藏加载状态
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            });
+        });
+
+        // 重置步骤状态
+        function resetSteps() {
+            for (let i = 1; i <= 5; i++) {
+                updateStepStatus('step' + i, 'pending', '');
+                document.getElementById('step' + i + 'Content').style.display = 'none';
+            }
+        }
+
+        // 显示步骤结果
+        function displayStepResults(data) {
+            if (data.success) {
+                // 查询成功，显示步骤容器
+                document.getElementById('stepsContainer').style.display = 'block';
+                
+                // 等待所有步骤完成后一次性显示
+                setTimeout(() => {
+                    // 步骤1: 问题改写
+                    if (data.step1ProblemRewriting) {
+                        updateStepStatus('step1', 'success', data.step1ProblemRewriting.content);
+                    }
+
+                    // 步骤2: 数据表选取
+                    if (data.step2TableSelection) {
+                        updateStepStatus('step2', 'success', data.step2TableSelection.content);
+                    }
+
+                    // 步骤3: 信息推理
+                    if (data.step3InformationInference) {
+                        updateStepStatus('step3', 'success', data.step3InformationInference.content);
+                    }
+
+                    // 步骤4: SQL生成
+                    if (data.step4SqlGeneration) {
+                        updateStepStatus('step4', 'success', data.step4SqlGeneration.content);
+                    }
+
+                    // 步骤5: SQL执行
+                    if (data.step5SqlExecution) {
+                        updateStepStatus('step5', 'success', data.step5SqlExecution.content);
+                    }
+
+                    // 显示最终结果
+                    if (data.finalData && data.finalData.length > 0) {
+                        displayFinalResult(data.finalData);
+                    }
+                }, 100); // 短暂延迟确保所有数据都已接收
+            } else {
+                displayError(data.errorMessage || '处理失败');
+            }
+        }
+
+        // 格式化步骤内容
+        function formatStepContent(stepResult) {
+            if (!stepResult) return '';
+            
+            let html = '';
+            
+            if (stepResult.content) {
+                // 分割第一行（概要信息）和其余内容
+                const lines = stepResult.content.split('\n');
+                const briefInfo = lines[0] || '';
+                const detailedInfo = lines.slice(1).join('\n').trim();
+                
+                html += '<div class="mb-3">';
+                
+                // 显示概要信息（第一行）
+                if (briefInfo) {
+                    html += '<div class="step-brief-info mb-2">';
+                    html += convertMarkdownToHtml(briefInfo);
+                    html += '</div>';
+                }
+                
+                // 显示详细信息（其余内容）
+                if (detailedInfo) {
+                    html += '<div class="step-detailed-info">';
+                    html += '<div class="mt-2">' + convertMarkdownToHtml(detailedInfo) + '</div>';
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+            }
+            
+            if (stepResult.status) {
+                html += '<div class="mb-2">';
+                html += '<strong>状态：</strong> ';
+                if (stepResult.status === 'success') {
+                    html += '<span class="badge bg-success">成功</span>';
+                } else if (stepResult.status === 'failed') {
+                    html += '<span class="badge bg-danger">失败</span>';
+                } else {
+                    html += '<span class="badge bg-secondary">' + stepResult.status + '</span>';
+                }
+                html += '</div>';
+            }
+            
+            if (stepResult.error) {
+                html += '<div class="alert alert-danger">';
+                html += '<strong>错误：</strong> ' + stepResult.error;
+                html += '</div>';
+            }
+            
+            return html;
+        }
+
+        // 将 Markdown 转换为 HTML
+        function convertMarkdownToHtml(markdown) {
+            if (!markdown) return '';
+            
+            let html = markdown;
+            
+            // 转换SQL代码块 ```sql...``` -> <pre><code class="language-sql">...</code></pre>
+            html = html.replace(/```sql\s*([\s\S]*?)```/gi, '<pre class="sql-code"><code class="language-sql">$1</code></pre>');
+            
+            // 转换普通代码块 ```...``` -> <pre><code>...</code></pre>
+            html = html.replace(/```([\s\S]*?)```/g, '<pre class="sql-code"><code>$1</code></pre>');
+            
+            // 转换表格 | col1 | col2 | -> <table>...</table>
+            html = html.replace(/\|(.+)\|\n\|[-\s|]+\|\n((?:\|.+\|\n?)*)/g, function(match, header, rows) {
+                const headerCells = header.split('|').map(cell => cell.trim()).filter(cell => cell);
+                const rowLines = rows.trim().split('\n').filter(line => line.trim());
+                
+                let tableHtml = '<table class="table table-striped table-sm">';
+                
+                // 表头
+                tableHtml += '<thead><tr>';
+                headerCells.forEach(cell => {
+                    tableHtml += '<th>' + cell + '</th>';
+                });
+                tableHtml += '</tr></thead>';
+                
+                // 数据行
+                tableHtml += '<tbody>';
+                rowLines.forEach(line => {
+                    const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+                    if (cells.length > 0) {
+                        tableHtml += '<tr>';
+                        cells.forEach(cell => {
+                            tableHtml += '<td>' + cell + '</td>';
+                        });
+                        tableHtml += '</tr>';
+                    }
+                });
+                tableHtml += '</tbody></table>';
+                
+                return tableHtml;
+            });
+            
+            // 转换粗体 **text** -> <strong>text</strong>
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // 转换斜体 *text* -> <em>text</em>
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // 转换行内代码 `code` -> <code>code</code>
+            html = html.replace(/`([^`]+)`/g, '<code class="bg-light px-1 rounded">$1</code>');
+            
+            // 转换引用块（处理多行引用块）
+            html = html.replace(/((?:^> .+$\n?)+)/gm, function(match) {
+                const lines = match.trim().split('\n');
+                const content = lines.map(line => line.replace(/^> /, '')).join('\n');
+                return '<blockquote class="blockquote">' + content + '</blockquote>';
+            });
+            
+            // 转换换行符 \n -> <br>（但不在pre标签内）
+            html = html.replace(/\n/g, function(match, offset, string) {
+                // 检查是否在pre标签内
+                const beforeMatch = string.substring(0, offset);
+                const preOpenCount = (beforeMatch.match(/<pre[^>]*>/g) || []).length;
+                const preCloseCount = (beforeMatch.match(/<\/pre>/g) || []).length;
+                return preOpenCount > preCloseCount ? '\n' : '<br>';
+            });
+            
+            // 转换列表项 - item -> <li>item</li>
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            
+            // 包装连续的列表项为<ul>
+            html = html.replace(/(<li>.*?<\/li>(?:\s*<li>.*?<\/li>)*)/gs, '<ul>$1</ul>');
+            
+            return html;
+        }
+
+        // 显示最终结果
+        function displayFinalResult(data) {
+            const finalResultDiv = document.getElementById('finalResult');
+            let html = '<div class="alert alert-success">';
+            html += '<i class="fas fa-check-circle"></i> 查询成功！找到 ' + data.length + ' 条记录';
+            html += '</div>';
+            
+            if (data.length > 0) {
+                html += '<div class="table-container">';
+                html += '<table class="table table-striped table-hover">';
+                
+                // 表头
+                const firstRow = data[0];
+                html += '<thead><tr>';
+                for (const key in firstRow) {
+                    html += '<th>' + key + '</th>';
+                }
+                html += '</tr></thead>';
+                
+                // 数据行
+                html += '<tbody>';
+                data.forEach(row => {
+                    html += '<tr>';
+                    for (const key in row) {
+                        html += '<td>' + (row[key] || '') + '</td>';
+                    }
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            
+            finalResultDiv.innerHTML = html;
+            document.getElementById('finalResultCard').style.display = 'block';
+        }
+
+        // 显示错误
+        function displayError(message) {
+            const finalResultDiv = document.getElementById('finalResult');
+            finalResultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ' + message + '</div>';
+            document.getElementById('finalResultCard').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+               

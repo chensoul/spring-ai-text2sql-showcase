@@ -69,11 +69,6 @@ public class Text2SqlStepResult {
         private boolean completed;
         
         /**
-         * 步骤描述
-         */
-        private String description;
-        
-        /**
          * 步骤详细内容
          */
         private String content;
@@ -82,7 +77,7 @@ public class Text2SqlStepResult {
          * 步骤状态 (success, error, processing)
          */
         private String status;
-        
+
         /**
          * 错误信息（如果有）
          */
