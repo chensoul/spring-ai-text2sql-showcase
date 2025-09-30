@@ -4,11 +4,9 @@ import com.example.text2sql.service.StepBasedText2SqlService;
 import com.example.text2sql.service.Text2SqlStepResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -44,20 +42,14 @@ public class StepBasedText2SqlController {
         String query = request.get("query");
 
         if (query == null || query.trim().isEmpty()) {
-            return Text2SqlStepResult.error("查询内容不能为空");
+            throw new RuntimeException("查询内容不能为空");
         }
 
         try {
-            log.info("收到步骤化 Text2SQL 查询请求: {}", query);
-
-            Text2SqlStepResult result = stepBasedText2SqlService.processQueryWithSteps(query);
-
-            log.info("步骤化 Text2SQL 查询完成，成功: {}", result.isSuccess());
-
-            return result;
+            return stepBasedText2SqlService.processQueryWithSteps(query);
         } catch (Exception e) {
             log.error("步骤化 Text2SQL 查询处理失败", e);
-            return Text2SqlStepResult.error("查询处理失败: " + e.getMessage());
+            throw new RuntimeException("查询处理失败" + e.getMessage());
         }
     }
 }

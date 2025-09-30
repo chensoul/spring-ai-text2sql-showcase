@@ -5,11 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +26,10 @@ public class StepBasedText2SqlService {
 
     @Qualifier("mcpChatClient")
     private final ChatClient mcpChatClient;
+
+    private static final String SQL_PATTERN = "(SELECT.*?)(?=\\n\\n|$)";
+    private static final String SQL_EXTRACTION_FAILED = "无法从内容中提取有效的SQL语句";
+    private static final String SQL_UNSAFE_MSG = "生成的 SQL 包含危险操作";
 
     // 步骤1: 问题改写提示模板
     private static final String STEP1_PROMPT = """
@@ -146,195 +149,143 @@ public class StepBasedText2SqlService {
             {sqlQuery}
             
             请严格按照以下格式返回：
-            执行SQL，执行完成，返回了X条记录
             
-            然后显示查询结果的详细信息。
+            执行成功/失败，找到 X 条记录
+            
+            然后使用 Markdown 表格格式展示查询结果：
+            
+            | 字段名1 | 字段名2 | 字段名3 |
+            |---------|---------|---------|
+            | 值1     | 值2     | 值3     |
+            | 值4     | 值5     | 值6     |
             
             要求：
-            1. 第一行必须是"执行SQL，执行完成，返回了X条记录"格式
-            2. 执行查询并返回结果
-            3. 显示查询结果的详细信息
-            4. 不要包含任何其他格式或额外说明
+            1. 第一行必须是"执行成功/失败，找到 X 条记录"格式
+            2. 使用 Markdown 表格展示数据，表头使用字段名
+            3. 数据行按顺序排列，每行一个记录
+            4. 如果查询失败，显示错误信息而不是表格
+            5. 如果查询成功但无数据，显示"无查询结果"
+            6. 不要包含任何其他格式或额外说明
             """;
+
+    /**
+     * 执行步骤的简化方法（无后处理函数）
+     */
+    private Text2SqlStepResult.StepResult executeStep(int stepNumber,
+                                                      String promptTemplate, Map<String, Object> variables) {
+        return executeStep(stepNumber, promptTemplate, variables, null);
+    }
+
+    /**
+     * 执行步骤的通用方法
+     */
+    private Text2SqlStepResult.StepResult executeStep(int stepNumber, String promptTemplate, Map<String, Object> variables, Function<String, String> function) {
+        try {
+            System.out.println("执行步骤" + stepNumber);
+
+            PromptTemplate template = new PromptTemplate(promptTemplate);
+            String promptText = template.create(variables).getContents();
+
+            String result = mcpChatClient.prompt()
+                    .user(promptText)
+                    .call()
+                    .content();
+
+            if (function != null) {
+                result = function.apply(result);
+            }
+
+            System.out.println(result);
+
+            return Text2SqlStepResult.StepResult.success(result);
+        } catch (Exception e) {
+            log.error("步骤{}执行失败", stepNumber, e);
+            return Text2SqlStepResult.StepResult.error(e.getMessage());
+        }
+    }
 
     /**
      * 处理查询请求，返回5个步骤的结果
      */
     public Text2SqlStepResult processQueryWithSteps(String userQuery) {
-        try {
-            System.out.println("开始处理步骤化 Text2SQL 查询: " + userQuery);
+        log.info("开始处理步骤化 Text2SQL 查询: {}", userQuery);
 
-            // 步骤1: 问题改写
-            Text2SqlStepResult.StepResult step1 = executeStep1(userQuery);
-            if (!step1.isCompleted()) {
-                // 即使步骤1失败，也返回包含步骤1信息的结果，让前端能够显示
-                return Text2SqlStepResult.partialSuccess(step1, null, null, null, null,
-                        "步骤1失败: " + step1.getErrorMessage());
-            }
-
-            // 步骤2: 数据表选取
-            Text2SqlStepResult.StepResult step2 = executeStep2(step1.getContent());
-            if (!step2.isCompleted()) {
-                return Text2SqlStepResult.partialSuccess(step1, step2, null, null, null,
-                        "步骤2失败: " + step2.getErrorMessage());
-            }
-
-            // 步骤3: 信息推理
-            Text2SqlStepResult.StepResult step3 = executeStep3(step1.getContent(), step2.getContent());
-            if (!step3.isCompleted()) {
-                return Text2SqlStepResult.partialSuccess(step1, step2, step3, null, null,
-                        "步骤3失败: " + step3.getErrorMessage());
-            }
-
-            // 步骤4: SQL生成
-            Text2SqlStepResult.StepResult step4 = executeStep4(step1.getContent(), step2.getContent(),
-                    step3.getContent());
-            if (!step4.isCompleted()) {
-                return Text2SqlStepResult.partialSuccess(step1, step2, step3, step4, null,
-                        "步骤4失败: " + step4.getErrorMessage());
-            }
-
-            // 步骤5: SQL执行
-            Text2SqlStepResult.StepResult step5 = executeStep5(step4.getContent());
-            List<Map<String, Object>> finalData = null;
-            if (step5.isCompleted()) {
-                finalData = extractDataFromStep5(step5.getContent());
-            }
-
-            return Text2SqlStepResult.success(step1, step2, step3, step4, step5, finalData);
-        } catch (Exception e) {
-            log.error("步骤化 Text2SQL 处理失败", e);
-            return Text2SqlStepResult.error("处理查询时发生错误: " + e.getMessage());
+        // 步骤1: 问题改写
+        Text2SqlStepResult.StepResult step1 = executeStep1(userQuery);
+        if (step1.isError()) {
+            return Text2SqlStepResult.create(step1, null, null, null, null);
         }
+
+        // 检查步骤1是否判断为数据库查询
+        if (isNonDatabaseQuery(step1.getContent())) {
+            // 将步骤1标记为失败
+            Text2SqlStepResult.StepResult failedStep1 = Text2SqlStepResult.StepResult.error(
+                    "非数据库查询，请输入与数据库相关的问题");
+            return Text2SqlStepResult.create(failedStep1, null, null, null, null);
+        }
+
+        // 步骤2: 数据表选取
+        Text2SqlStepResult.StepResult step2 = executeStep2(step1.getContent());
+        if (step2.isError()) {
+            return Text2SqlStepResult.create(step1, step2, null, null, null);
+        }
+
+        // 步骤3: 信息推理
+        Text2SqlStepResult.StepResult step3 = executeStep3(step1.getContent(), step2.getContent());
+        if (step3.isError()) {
+            return Text2SqlStepResult.create(step1, step2, step3, null, null);
+        }
+
+        // 步骤4: SQL生成
+        Text2SqlStepResult.StepResult step4 = executeStep4(step1.getContent(), step2.getContent(),
+                step3.getContent());
+        if (step4.isError()) {
+            return Text2SqlStepResult.create(step1, step2, step3, step4, null);
+        }
+
+        // 步骤5: SQL执行
+        Text2SqlStepResult.StepResult step5 = executeStep5(step4.getContent());
+
+        return Text2SqlStepResult.create(step1, step2, step3, step4, step5);
+
+    }
+
+    /**
+     * 判断步骤1的结果是否为非数据库查询
+     */
+    private boolean isNonDatabaseQuery(String step1Content) {
+        if (step1Content == null || step1Content.trim().isEmpty()) {
+            return true;
+        }
+
+        String content = step1Content.trim().toLowerCase();
+
+        // 检查是否包含非数据库查询的提示信息
+        return
+                content.contains("请输入与数据库查询相关的问题") ||
+                        content.contains("当前数据库中没有相关的业务表");
     }
 
     /**
      * 执行步骤1: 问题改写
      */
     private Text2SqlStepResult.StepResult executeStep1(String userQuery) {
-        try {
-            System.out.println("\n执行步骤1: 问题改写");
-
-            PromptTemplate promptTemplate = new PromptTemplate(STEP1_PROMPT);
-            String promptText = promptTemplate.create(Map.of(
-                    "userQuery", userQuery
-            )).getContents();
-
-            // 让AI使用工具查询数据库表结构
-            String result = mcpChatClient.prompt()
-                    .user(promptText)
-                    .call()
-                    .content();
-
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-
-            // 检查是否返回了提示信息
-            if (result != null && result.trim().startsWith("提示：")) {
-                stepResult.setCompleted(false);
-                stepResult.setContent(result.trim());
-                stepResult.setStatus("error");
-
-                // 根据提示内容设置不同的错误信息
-                if (result.contains("请输入与数据库查询相关的问题")) {
-                    stepResult.setErrorMessage("输入内容与数据库查询无关");
-                } else if (result.contains("当前数据库中没有相关的业务表")) {
-                    stepResult.setErrorMessage("当前数据库中没有相关的业务表");
-                } else {
-                    stepResult.setErrorMessage("输入内容不符合要求");
-                }
-
-                System.out.println("AI判断结果：" + result);
-                return stepResult;
-            }
-
-            stepResult.setCompleted(true);
-            stepResult.setContent(result != null ? result.trim() : "");
-            stepResult.setStatus("success");
-
-            System.out.println("AI改写结果：" + result);
-            return stepResult;
-
-        } catch (Exception e) {
-            log.error("步骤1执行失败", e);
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(false);
-            stepResult.setContent("问题改写，改写失败：" + e.getMessage());
-            stepResult.setStatus("error");
-            stepResult.setErrorMessage(e.getMessage());
-            return stepResult;
-        }
+        return executeStep(1, STEP1_PROMPT, Map.of("userQuery", userQuery));
     }
-
 
     /**
      * 执行步骤2: 数据表选取
      */
     private Text2SqlStepResult.StepResult executeStep2(String rewrittenQuery) {
-        try {
-            System.out.println("\n执行步骤2: 数据表选取");
-
-            PromptTemplate promptTemplate = new PromptTemplate(STEP2_PROMPT);
-            String promptText = promptTemplate.create(Map.of("rewrittenQuery", rewrittenQuery)).getContents();
-
-            String result = mcpChatClient.prompt()
-                    .user(promptText)
-                    .call()
-                    .content();
-
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(true);
-            stepResult.setContent(result.trim());
-            stepResult.setStatus("success");
-
-            System.out.println(result);
-            return stepResult;
-
-        } catch (Exception e) {
-            log.error("步骤2执行失败", e);
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(false);
-            stepResult.setContent("数据表选取，选择失败：" + e.getMessage());
-            stepResult.setStatus("error");
-            stepResult.setErrorMessage(e.getMessage());
-            return stepResult;
-        }
+        return executeStep(2, STEP2_PROMPT, Map.of("rewrittenQuery", rewrittenQuery));
     }
 
     /**
      * 执行步骤3: 信息推理
      */
     private Text2SqlStepResult.StepResult executeStep3(String rewrittenQuery, String selectedTables) {
-        try {
-            System.out.println("\n执行步骤3: 信息推理");
-
-            PromptTemplate promptTemplate = new PromptTemplate(STEP3_PROMPT);
-            String promptText = promptTemplate.create(Map.of(
-                    "rewrittenQuery", rewrittenQuery,
-                    "selectedTables", selectedTables
-            )).getContents();
-
-            String result = mcpChatClient.prompt()
-                    .user(promptText)
-                    .call()
-                    .content();
-
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(true);
-            stepResult.setContent(result.trim());
-            stepResult.setStatus("success");
-
-            System.out.println(result);
-            return stepResult;
-
-        } catch (Exception e) {
-            log.error("步骤3执行失败", e);
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(false);
-            stepResult.setContent("信息推理，推理失败：" + e.getMessage());
-            stepResult.setStatus("error");
-            stepResult.setErrorMessage(e.getMessage());
-            return stepResult;
-        }
+        return executeStep(3, STEP3_PROMPT,
+                Map.of("rewrittenQuery", rewrittenQuery, "selectedTables", selectedTables));
     }
 
     /**
@@ -342,123 +293,57 @@ public class StepBasedText2SqlService {
      */
     private Text2SqlStepResult.StepResult executeStep4(String rewrittenQuery, String selectedTables,
                                                        String inferenceResult) {
-        try {
-            System.out.println("\n执行步骤4: SQL生成");
-
-            PromptTemplate promptTemplate = new PromptTemplate(STEP4_PROMPT);
-            String promptText = promptTemplate.create(Map.of(
-                    "rewrittenQuery", rewrittenQuery,
-                    "selectedTables", selectedTables,
-                    "inferenceResult", inferenceResult
-            )).getContents();
-
-            String result = mcpChatClient.prompt()
-                    .user(promptText)
-                    .call()
-                    .content();
-
-            // 清理 SQL 语句
-            String cleanedSql = cleanSql(result);
-
-            // 验证 SQL 安全性
-            if (!isSqlSafe(cleanedSql)) {
-                throw new IllegalArgumentException("生成的 SQL 不安全，包含危险操作");
-            }
-
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(true);
-            stepResult.setContent(result.trim());
-            stepResult.setStatus("success");
-
-            System.out.println(cleanedSql);
-            return stepResult;
-
-        } catch (Exception e) {
-            log.error("步骤4执行失败", e);
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(false);
-            stepResult.setContent("查询SQL生成，生成失败：" + e.getMessage());
-            stepResult.setStatus("error");
-            stepResult.setErrorMessage(e.getMessage());
-            return stepResult;
-        }
+        Map<String, Object> variables = Map.of(
+                "rewrittenQuery", rewrittenQuery,
+                "selectedTables", selectedTables,
+                "inferenceResult", inferenceResult
+        );
+        return executeStep(4, STEP4_PROMPT, variables);
     }
 
     /**
      * 执行步骤5: SQL执行
      */
     private Text2SqlStepResult.StepResult executeStep5(String sqlContent) {
-        try {
-            System.out.println("\n执行步骤5: SQL执行");
-
-            String sql = extractSqlFromContent(sqlContent);
-            if (sql == null || sql.trim().isEmpty()) {
-                throw new IllegalArgumentException("无法从内容中提取有效的SQL语句");
-            }
-
-            PromptTemplate promptTemplate = new PromptTemplate(STEP5_PROMPT);
-            String promptText = promptTemplate.create(Map.of("sqlQuery", sql)).getContents();
-
-            String result = mcpChatClient.prompt()
-                    .user(promptText)
-                    .call()
-                    .content();
-
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(true);
-            stepResult.setContent(result.trim());
-            stepResult.setStatus("success");
-
-            System.out.println(result);
-            return stepResult;
-
-        } catch (Exception e) {
-            log.error("步骤5执行失败", e);
-            Text2SqlStepResult.StepResult stepResult = new Text2SqlStepResult.StepResult();
-            stepResult.setCompleted(false);
-            stepResult.setContent("执行SQL，执行失败：" + e.getMessage());
-            stepResult.setStatus("error");
-            stepResult.setErrorMessage(e.getMessage());
-            return stepResult;
+        // 从步骤4的内容中提取SQL语句
+        String sql = extractSqlFromContent(sqlContent);
+        if (sql == null || sql.trim().isEmpty()) {
+            throw new IllegalArgumentException(SQL_EXTRACTION_FAILED);
         }
-    }
 
-    /**
-     * 从步骤5的结果中提取数据
-     */
-    private List<Map<String, Object>> extractDataFromStep5(String step5Content) {
-        try {
-            // 尝试使用 MCP 工具直接执行查询获取结构化数据
-            String sql = extractSqlFromContent(step5Content);
-            if (sql != null) {
-                return mcpChatClient.prompt()
-                        .user("请使用 executeQuery 工具执行以下 SQL 查询: " + sql)
-                        .call()
-                        .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {
-                        });
-            }
-            return List.of();
-        } catch (Exception e) {
-            log.warn("无法提取结构化数据: {}", e.getMessage());
-            return List.of();
+        if (!isSqlSafe(sql)) {
+            throw new IllegalArgumentException(SQL_UNSAFE_MSG);
         }
+
+        return executeStep(5, STEP5_PROMPT, Map.of("sqlQuery", sql));
     }
 
     /**
      * 从内容中提取SQL语句
      */
     private String extractSqlFromContent(String content) {
-        // 查找SQL语句
-        Pattern pattern = Pattern.compile("(SELECT.*?)(?=\\n\\n|$)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(content);
-
-        if (matcher.find()) {
-            String sql = matcher.group(1).trim();
-            // 清理SQL语句
-            sql = sql.replaceAll("```sql\\s*", "").replaceAll("```\\s*", "");
-            return sql;
+        if (content == null || content.trim().isEmpty()) {
+            log.warn("内容为空，无法提取SQL语句");
+            return null;
         }
 
-        return null;
+        try {
+            // 查找SQL语句
+            Pattern pattern = Pattern.compile(SQL_PATTERN, Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(content);
+
+            if (matcher.find()) {
+                String sql = matcher.group(1).trim();
+                // 清理SQL语句
+                sql = sql.replaceAll("```sql\\s*", "").replaceAll("```\\s*", "");
+                return sql;
+            }
+
+            log.warn("无法从内容中提取SQL语句，内容: {}", content.length() > 200 ? content.substring(0, 200) + "..." : content);
+            return null;
+        } catch (Exception e) {
+            log.error("提取SQL语句时发生错误", e);
+            return null;
+        }
     }
 }

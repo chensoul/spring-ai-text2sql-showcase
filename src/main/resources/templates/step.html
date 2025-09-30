@@ -150,6 +150,56 @@
             margin: 0.5rem 0;
             overflow-x: auto;
         }
+        
+        /* 步骤5执行结果特殊样式 */
+        .step-card.execution-result {
+            border-left-width: 6px;
+        }
+        
+        .step-card.execution-success {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+        }
+        
+        .step-card.execution-failed {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #fff8f8 0%, #ffe8e8 100%);
+        }
+        
+        .step-card.execution-result .step-header {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .step-card.execution-success .step-header strong {
+            color: #155724;
+        }
+        
+        .step-card.execution-failed .step-header strong {
+            color: #721c24;
+        }
+        
+        /* 列表样式优化 */
+        .step-detailed-info ul {
+            margin-bottom: 0.5rem;
+        }
+        
+        .step-detailed-info ul li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .step-detailed-info ul li.ml-3 {
+            margin-left: 1rem;
+            position: relative;
+        }
+        
+        .step-detailed-info ul li.ml-3::before {
+            content: "•";
+            color: #6c757d;
+            position: absolute;
+            left: -0.75rem;
+        }
     </style>
 </head>
 <body>
@@ -175,7 +225,7 @@
                                 <form id="queryForm">
                                     <div class="mb-3">
                                         <label for="queryInput" class="form-label">请输入您的查询需求：</label>
-                                        <textarea class="form-control" id="queryInput" rows="2"
+                                        <textarea class="form-control" id="queryInput" rows="3"
                                                 placeholder="例如：查询所有技术部的员工信息">查询员工表中工资最高的前5条记录</textarea>
                                     </div>
                                     <button type="submit" class="btn btn-primary">
@@ -318,15 +368,6 @@
                         </div>
                     </div>
 
-                    <!-- 最终结果 -->
-                    <div class="card mt-4" id="finalResultCard" style="display: none;">
-                        <div class="card-header">
-                            <h5><i class="fas fa-chart-line"></i> 最终查询结果</h5>
-                        </div>
-                        <div class="card-body">
-                            <div id="finalResult"></div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -396,10 +437,11 @@
                 card.classList.add('failed');
                 number.classList.add('failed');
                 statusIcon.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
-            } else if (status === 'processing') {
-                card.classList.add('active');
-                number.classList.add('active');
-                statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i>';
+            } else {
+                // 处理其他状态（如 pending, processing 等）
+                card.classList.remove('active', 'completed', 'failed');
+                number.classList.remove('active', 'completed', 'failed');
+                statusIcon.innerHTML = '<i class="fas fa-clock text-secondary"></i>';
             }
 
             if (content) {
@@ -420,6 +462,17 @@
                 } else {
                     // 如果没有详细信息，隐藏content区域
                     contentDiv.style.display = 'none';
+                }
+                
+                // 特殊处理步骤5的执行状态
+                if (stepId === 'step5' && (firstLine.includes('执行成功') || firstLine.includes('执行失败'))) {
+                    // 为步骤5添加特殊的样式类
+                    card.classList.add('execution-result');
+                    if (firstLine.includes('执行成功')) {
+                        card.classList.add('execution-success');
+                    } else if (firstLine.includes('执行失败')) {
+                        card.classList.add('execution-failed');
+                    }
                 }
             }
             
@@ -443,7 +496,7 @@
             
             // 隐藏步骤容器，等待查询成功后再显示
             document.getElementById('stepsContainer').style.display = 'none';
-            document.getElementById('finalResultCard').style.display = 'none';
+            
 
             // 显示加载状态
             const submitBtn = document.querySelector('button[type="submit"]');
@@ -465,7 +518,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                displayError('查询失败：' + error.message);
+                alert('查询失败：' + error.message);
             })
             .finally(() => {
                 // 隐藏加载状态
@@ -477,8 +530,22 @@
         // 重置步骤状态
         function resetSteps() {
             for (let i = 1; i <= 5; i++) {
+                const card = document.getElementById('step' + i + 'Card');
+                // 移除所有特殊样式类
+                card.classList.remove('execution-result', 'execution-success', 'execution-failed', 'completed', 'failed', 'active');
+                // 重置步骤状态
                 updateStepStatus('step' + i, 'pending', '');
                 document.getElementById('step' + i + 'Content').style.display = 'none';
+                // 显示所有步骤卡片
+                card.style.display = 'block';
+            }
+        }
+
+        // 隐藏指定范围的步骤
+        function hideSteps(startStep, endStep) {
+            for (let i = startStep; i <= endStep; i++) {
+                const card = document.getElementById('step' + i + 'Card');
+                card.style.display = 'none';
             }
         }
 
@@ -489,44 +556,54 @@
             
             // 等待所有步骤完成后一次性显示
             setTimeout(() => {
-                // 步骤1: 问题改写
-                if (data.step1ProblemRewriting) {
-                    const status = data.step1ProblemRewriting.status === 'error' ? 'error' : 'success';
-                    updateStepStatus('step1', status, data.step1ProblemRewriting.content);
-                }
+                try {
+                    // 先隐藏所有步骤
+                    for (let i = 1; i <= 5; i++) {
+                        document.getElementById('step' + i + 'Card').style.display = 'none';
+                    }
 
-                // 步骤2: 数据表选取
-                if (data.step2TableSelection) {
-                    const status = data.step2TableSelection.status === 'error' ? 'error' : 'success';
-                    updateStepStatus('step2', status, data.step2TableSelection.content);
-                }
+                    // 步骤1: 问题改写
+                    if (data.step1ProblemRewriting) {
+                        document.getElementById('step1Card').style.display = 'block';
+                        updateStepStatus('step1', data.step1ProblemRewriting.status, data.step1ProblemRewriting.content);
+                    }
 
-                // 步骤3: 信息推理
-                if (data.step3InformationInference) {
-                    const status = data.step3InformationInference.status === 'error' ? 'error' : 'success';
-                    updateStepStatus('step3', status, data.step3InformationInference.content);
-                }
+                    // 检查是否为非数据库查询（只有步骤1有数据，其他步骤为null）
+                    const isNonDatabaseQuery = data.step1ProblemRewriting && 
+                                             !data.step2TableSelection && 
+                                             !data.step3InformationInference && 
+                                             !data.step4SqlGeneration && 
+                                             !data.step5SqlExecution;
 
-                // 步骤4: SQL生成
-                if (data.step4SqlGeneration) {
-                    const status = data.step4SqlGeneration.status === 'error' ? 'error' : 'success';
-                    updateStepStatus('step4', status, data.step4SqlGeneration.content);
-                }
+                    if (!isNonDatabaseQuery) {
+                        // 正常数据库查询：显示所有有数据的步骤
+                        // 步骤2: 数据表选取
+                        if (data.step2TableSelection) {
+                            document.getElementById('step2Card').style.display = 'block';
+                            updateStepStatus('step2', data.step2TableSelection.status, data.step2TableSelection.content);
+                        }
 
-                // 步骤5: SQL执行
-                if (data.step5SqlExecution) {
-                    const status = data.step5SqlExecution.status === 'error' ? 'error' : 'success';
-                    updateStepStatus('step5', status, data.step5SqlExecution.content);
-                }
+                        // 步骤3: 信息推理
+                        if (data.step3InformationInference) {
+                            document.getElementById('step3Card').style.display = 'block';
+                            updateStepStatus('step3', data.step3InformationInference.status, data.step3InformationInference.content);
+                        }
 
-                // 显示最终结果
-                if (data.finalData && data.finalData.length > 0) {
-                    displayFinalResult(data.finalData);
-                }
-                
-                // 如果整体失败，显示错误信息
-                if (!data.success && data.error) {
-                    displayError(data.error);
+                        // 步骤4: SQL生成
+                        if (data.step4SqlGeneration) {
+                            document.getElementById('step4Card').style.display = 'block';
+                            updateStepStatus('step4', data.step4SqlGeneration.status, data.step4SqlGeneration.content);
+                        }
+
+                        // 步骤5: SQL执行
+                        if (data.step5SqlExecution) {
+                            document.getElementById('step5Card').style.display = 'block';
+                            updateStepStatus('step5', data.step5SqlExecution.status, data.step5SqlExecution.content);
+                        }
+                    }
+                } catch (error) {
+                    console.error('显示步骤结果时发生错误:', error);
+                    alert('显示结果时发生错误: ' + error.message);
                 }
             }, 100); // 短暂延迟确保所有数据都已接收
         }
@@ -601,12 +678,12 @@
                 const headerCells = header.split('|').map(cell => cell.trim()).filter(cell => cell);
                 const rowLines = rows.trim().split('\n').filter(line => line.trim());
                 
-                let tableHtml = '<table class="table table-striped table-sm">';
+                let tableHtml = '<div class="table-responsive"><table class="table table-striped table-sm table-hover">';
                 
                 // 表头
-                tableHtml += '<thead><tr>';
+                tableHtml += '<thead class="table-dark"><tr>';
                 headerCells.forEach(cell => {
-                    tableHtml += '<th>' + cell + '</th>';
+                    tableHtml += '<th scope="col">' + cell + '</th>';
                 });
                 tableHtml += '</tr></thead>';
                 
@@ -616,13 +693,17 @@
                     const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
                     if (cells.length > 0) {
                         tableHtml += '<tr>';
-                        cells.forEach(cell => {
-                            tableHtml += '<td>' + cell + '</td>';
+                        cells.forEach((cell, index) => {
+                            if (index === 0) {
+                                tableHtml += '<th scope="row">' + cell + '</th>';
+                            } else {
+                                tableHtml += '<td>' + cell + '</td>';
+                            }
                         });
                         tableHtml += '</tr>';
                     }
                 });
-                tableHtml += '</tbody></table>';
+                tableHtml += '</tbody></table></div>';
                 
                 return tableHtml;
             });
@@ -652,58 +733,30 @@
                 return preOpenCount > preCloseCount ? '\n' : '<br>';
             });
             
-            // 转换列表项 - item -> <li>item</li>
-            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            // 转换列表项（支持一级和二级列表）
+            // 使用更智能的方法处理嵌套列表
+            html = html.replace(/((?:^    - .+$\n?)+)/gm, function(match) {
+                // 处理二级列表块
+                const items = match.trim().split('\n').map(line => {
+                    const content = line.replace(/^    - /, '');
+                    return '<li class="ml-3">' + content + '</li>';
+                }).join('');
+                return '<ul class="mb-2">' + items + '</ul>';
+            });
             
-            // 包装连续的列表项为<ul>，处理多行列表
-            html = html.replace(/(<li>.*?<\/li>(?:\s*<li>.*?<\/li>)*)/gs, function(match) {
-                return '<ul>' + match + '</ul>';
+            html = html.replace(/((?:^- .+$\n?)+)/gm, function(match) {
+                // 处理一级列表块
+                const items = match.trim().split('\n').map(line => {
+                    const content = line.replace(/^- /, '');
+                    return '<li>' + content + '</li>';
+                }).join('');
+                return '<ul class="mb-2">' + items + '</ul>';
             });
             
             return html;
         }
 
-        // 显示最终结果
-        function displayFinalResult(data) {
-            const finalResultDiv = document.getElementById('finalResult');
-            let html = '<div class="alert alert-success">';
-            html += '<i class="fas fa-check-circle"></i> 查询成功！找到 ' + data.length + ' 条记录';
-            html += '</div>';
-            
-            if (data.length > 0) {
-                html += '<div class="table-container">';
-                html += '<table class="table table-striped table-hover">';
-                
-                // 表头
-                const firstRow = data[0];
-                html += '<thead><tr>';
-                for (const key in firstRow) {
-                    html += '<th>' + key + '</th>';
-                }
-                html += '</tr></thead>';
-                
-                // 数据行
-                html += '<tbody>';
-                data.forEach(row => {
-                    html += '<tr>';
-                    for (const key in row) {
-                        html += '<td>' + (row[key] || '') + '</td>';
-                    }
-                    html += '</tr>';
-                });
-                html += '</tbody></table></div>';
-            }
-            
-            finalResultDiv.innerHTML = html;
-            document.getElementById('finalResultCard').style.display = 'block';
-        }
 
-        // 显示错误
-        function displayError(message) {
-            const finalResultDiv = document.getElementById('finalResult');
-            finalResultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ' + message + '</div>';
-            document.getElementById('finalResultCard').style.display = 'block';
-        }
     </script>
 </body>
 </html>

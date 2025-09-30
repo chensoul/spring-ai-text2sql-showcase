@@ -1,5 +1,6 @@
 package com.example.text2sql.service;
 
+import com.example.text2sql.util.SqlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -60,7 +61,7 @@ public class DirectText2SqlService implements Text2SqlService {
             }
 
             // 3. 验证 SQL 安全性
-            if (!isSqlSafe(sql)) {
+            if (!SqlUtils.isSqlSafe(sql)) {
                 return Text2SqlResult.error("生成的 SQL 包含不安全的操作，请重新描述您的查询需求");
             }
 
@@ -101,27 +102,5 @@ public class DirectText2SqlService implements Text2SqlService {
         sql = sql.replaceAll("```sql", "").replaceAll("```", "").trim();
 
         return sql;
-    }
-
-    /**
-     * 验证 SQL 安全性
-     */
-    private boolean isSqlSafe(String sql) {
-        String upperSql = sql.toUpperCase();
-
-        // 检查是否包含危险操作
-        String[] dangerousKeywords = {
-                "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE",
-                "EXEC", "EXECUTE", "UNION", "INFORMATION_SCHEMA"
-        };
-
-        for (String keyword : dangerousKeywords) {
-            if (upperSql.contains(keyword)) {
-                return false;
-            }
-        }
-
-        // 确保是 SELECT 查询
-        return upperSql.trim().startsWith("SELECT");
     }
 }

@@ -4,12 +4,13 @@
 
 ## 功能特性
 
-- 🤖 **智能 SQL 生成**：使用 Spring AI 和 OpenAI GPT 模型将自然语言转换为 SQL 查询
+- 🤖 **智能 SQL 生成**：使用 Spring AI 和 DeepSeek Chat API 将自然语言转换为 SQL 查询
 - 🛡️ **安全防护**：内置 SQL 注入防护，只允许 SELECT 查询
 - 🎨 **美观界面**：现代化的 Web 界面，支持实时查询和结果展示
 - 📊 **数据可视化**：查询结果以表格形式展示，支持分页和滚动
 - 🔍 **数据库结构**：自动获取并展示数据库结构信息
 - 📝 **示例查询**：提供常用查询示例，帮助用户快速上手
+- 🛠️ **工具集成**：支持 MCP 工具查询数据库结构，提高查询准确性
 
 ## 技术栈
 
@@ -19,6 +20,7 @@
 - **前端**：Bootstrap 5, Thymeleaf
 - **构建工具**：Maven
 - **容器化**：Docker Compose
+- **工具集成**：Spring AI Tools, MCP 工具支持
 
 ## 快速开始
 
@@ -66,7 +68,9 @@ mvn clean spring-boot:run
 
 ### 5. 访问应用
 
-打开浏览器访问：http://localhost:8080
+打开浏览器访问：
+- **主页面**：http://localhost:8080 - 直接模式查询
+- **分步骤页面**：http://localhost:8080/steps - 分步骤模式查询
 
 ## 使用示例
 
@@ -96,22 +100,31 @@ src/main/java/com/example/text2sql/
 ├── config/
 │   └── AppConfig.java               # 应用配置
 ├── controller/
-│   └── Text2SqlController.java      # REST API 控制器
+│   ├── Text2SqlController.java      # REST API 控制器
+│   └── StepBasedText2SqlController.java # 分步骤查询控制器
 ├── model/                           # 数据模型
 │   ├── Employee.java
 │   ├── Project.java
 │   ├── Department.java
 │   └── ProjectMember.java
-└── service/
-    ├── Text2SqlService.java         # 核心 Text2SQL 服务
-    └── DatabaseSchemaService.java   # 数据库结构服务
+├── service/
+│   ├── Text2SqlService.java         # 核心 Text2SQL 服务接口
+│   ├── DirectText2SqlService.java   # 直接 Text2SQL 服务实现
+│   ├── McpText2SqlService.java      # MCP 工具集成服务
+│   ├── StepBasedText2SqlService.java # 分步骤查询服务
+│   ├── DatabaseTool.java            # 数据库工具类
+│   ├── Text2SqlResult.java          # 查询结果封装
+│   └── Text2SqlStepResult.java      # 分步骤查询结果
+└── util/
+    └── SqlUtils.java                # SQL 工具类
 
 src/main/resources/
 ├── application.yml                  # 应用配置
 ├── schema.sql                      # 数据库结构
 ├── data.sql                        # 示例数据
 └── templates/
-    └── index.html                  # 前端页面
+    ├── index.html                  # 主页面
+    └── step.html                   # 分步骤查询页面
 
 # Docker 配置
 ├── docker-compose.yml              # Docker Compose 配置
@@ -121,7 +134,7 @@ src/main/resources/
 ## API 接口
 
 ### POST /api/query
-处理自然语言查询请求
+处理自然语言查询请求（直接模式）
 
 **请求体：**
 ```json
@@ -150,11 +163,78 @@ src/main/resources/
 }
 ```
 
+### POST /api/steps/query
+处理分步骤自然语言查询请求
+
+**请求体：**
+```json
+{
+  "query": "查询所有技术部的员工信息"
+}
+```
+
+**响应：**
+```json
+{
+  "success": true,
+  "step1ProblemRewriting": {
+    "completed": true,
+    "status": "success",
+    "content": "问题改写，改写为：查询技术部门的所有员工信息"
+  },
+  "step2TableSelection": {
+    "completed": true,
+    "status": "success",
+    "content": "数据表选取，选择表为：employees"
+  },
+  "step3InformationInference": {
+    "completed": true,
+    "status": "success",
+    "content": "信息推理，本次推理参考业务信息是：..."
+  },
+  "step4SqlGeneration": {
+    "completed": true,
+    "status": "success",
+    "content": "SQL生成，生成的SQL语句是：..."
+  },
+  "step5SqlExecution": {
+    "completed": true,
+    "status": "success",
+    "content": "执行SQL，执行完成，返回了X条记录"
+  }
+}
+```
+
 ### GET /api/schema
 获取数据库结构信息
 
 ### GET /api/health
 健康检查接口
+
+## 服务实现
+
+项目提供了多种 Text2SQL 服务实现，满足不同的使用场景：
+
+### 1. DirectText2SqlService（直接模式）
+- **特点**：一步到位，直接将自然语言转换为 SQL 并执行
+- **适用场景**：简单查询，快速原型开发
+- **API 端点**：`POST /api/query`
+
+### 2. McpText2SqlService（MCP 工具模式）
+- **特点**：集成 MCP 工具，AI 可以主动查询数据库结构
+- **适用场景**：复杂查询，需要动态了解数据库结构
+- **优势**：提高查询准确性，减少 AI 调用次数
+
+### 3. StepBasedText2SqlService（分步骤模式）
+- **特点**：将查询过程分解为 5 个步骤，每步都有详细说明
+- **适用场景**：教学演示，复杂查询调试
+- **API 端点**：`POST /api/steps/query`
+- **步骤说明**：
+  1. **问题改写**：将用户查询改写为更清晰的描述
+  2. **数据表选取**：选择相关的数据表
+  3. **信息推理**：分析业务逻辑和查询需求
+  4. **SQL 生成**：生成对应的 SQL 语句
+  5. **SQL 执行**：执行查询并返回结果
 
 ## 安全特性
 
@@ -168,6 +248,24 @@ src/main/resources/
 
 ```yaml
 spring:
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/text2sql_db?connectTimeout=60000&socketTimeout=60000&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root123
+
+  # JPA 配置
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  # Spring AI 配置
   ai:
     openai:
       base-url: https://api.deepseek.com
@@ -175,7 +273,33 @@ spring:
       chat:
         options:
           model: deepseek-chat
+          temperature: 0.1
+
+# 日志配置
+logging:
+  level:
+    org.springframework.ai: ERROR
+    com.example: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 ```
+
+### MCP 工具配置
+
+项目支持 MCP（Model Context Protocol）工具，允许 AI 主动查询数据库结构：
+
+```java
+@Bean("mcpChatClient")
+public ChatClient mcpChatClient(ChatClient.Builder chatClientBuilder, DatabaseTool databaseTool) {
+    return chatClientBuilder
+            .defaultTools(databaseTool)
+            .build();
+}
+```
+
+**可用的 MCP 工具：**
+- `getTableNames`：获取所有表名
+- `getTableSchema`：获取指定表的结构信息
 
 ## 扩展功能
 
@@ -202,7 +326,23 @@ services:
 default-character-set=utf8mb4
 ```
 
-### 2. 添加更多 AI 模型
+### 2. 切换服务模式
+项目支持多种服务模式，可以根据需要选择：
+
+```java
+// 在 AppConfig.java 中配置不同的服务实现
+@Bean
+public Text2SqlService text2SqlService() {
+    // 选择服务实现
+    return new DirectText2SqlService(chatClient, databaseTool);
+    // 或者
+    // return new McpText2SqlService(mcpChatClient, databaseTool);
+    // 或者
+    // return new StepBasedText2SqlService(mcpChatClient, databaseTool);
+}
+```
+
+### 3. 添加更多 AI 模型
 支持多种 AI 模型，修改 `application.yml` 配置：
 
 ```yaml
@@ -226,8 +366,37 @@ spring:
           model: gpt-3.5-turbo
 ```
 
-### 3. 查询历史记录
+### 4. 自定义 MCP 工具
+可以添加更多 MCP 工具来扩展 AI 的能力：
+
+```java
+@Tool(name = "customTool", description = "自定义工具描述")
+public String customTool(@ToolParam(description = "参数描述") String param) {
+    // 实现自定义逻辑
+    return "结果";
+}
+```
+
+### 5. 查询历史记录
 可以添加查询历史记录功能，保存用户的查询历史和结果。
+
+## 项目亮点
+
+1. **完整的端到端实现**：从自然语言输入到 SQL 结果展示
+2. **多种服务模式**：支持直接模式、MCP 工具模式、分步骤模式
+3. **安全可靠**：内置多层安全防护机制
+4. **用户友好**：现代化界面和丰富的示例
+5. **技术先进**：使用最新的 Spring AI 框架和 MCP 工具
+6. **易于扩展**：模块化设计，便于功能扩展
+7. **教学友好**：分步骤模式便于学习和调试
+
+## 适用场景
+
+1. **数据分析师**：快速生成复杂查询
+2. **业务用户**：通过自然语言获取数据洞察
+3. **开发人员**：快速原型和测试查询
+4. **数据探索**：发现数据中的模式和关系
+5. **教学演示**：展示 AI 在数据库查询中的应用
 
 ## 故障排除
 

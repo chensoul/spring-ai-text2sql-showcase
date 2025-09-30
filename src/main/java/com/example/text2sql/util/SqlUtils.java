@@ -3,12 +3,6 @@ package com.example.text2sql.util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * TODO Comment
- *
- * @author <a href="mailto:ichensoul@gmail.com">chensoul</a>
- * @since TODO
- */
 public class SqlUtils {
 
     /**
