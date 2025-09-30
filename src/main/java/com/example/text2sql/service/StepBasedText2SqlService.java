@@ -12,7 +12,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.example.text2sql.util.SqlUtils.cleanSql;
 import static com.example.text2sql.util.SqlUtils.isSqlSafe;
 
 /**
@@ -26,6 +25,8 @@ public class StepBasedText2SqlService {
 
     @Qualifier("mcpChatClient")
     private final ChatClient mcpChatClient;
+    
+    private final BusinessRuleService businessRuleService;
 
     private static final String SQL_PATTERN = "(SELECT.*?)(?=\\n\\n|$)";
     private static final String SQL_EXTRACTION_FAILED = "无法从内容中提取有效的SQL语句";
@@ -88,30 +89,35 @@ public class StepBasedText2SqlService {
 
     // 步骤3: 信息推理提示模板
     private static final String STEP3_PROMPT = """
-            基于选中的表和查询需求，进行信息推理。
+            基于选中的表和查询需求，进行智能信息推理。
             
             查询需求：{rewrittenQuery}
             选中表：{selectedTables}
+            业务规则参考：{businessRules}
             
-            请严格按照以下格式返回：
+            请严格按照以下格式返回，不要添加任何其他内容：
+            
             信息推理，本次推理参考业务信息是：
             
-            然后提供详细的推理分析，包括：
-            1. 需要哪些字段
-            2. 需要什么条件
-            3. 表之间的关联关系
-            4. 业务逻辑推理
-            5. 时间范围、状态字段等业务规则
+            - 需要查询的字段：[具体列出需要查询的字段名]
+            - 筛选条件：[说明WHERE条件，如无特定条件则说明"无特定筛选条件"]
+            - 表关联关系：[说明表关联情况，如单表查询则说明"单表查询，无需表关联"]
+            - 排序规则：[说明ORDER BY的排序逻辑和目的]
+            - 分组统计：[说明是否需要GROUP BY，如不需要则说明"无需分组统计"]
+            - 结果限制：[说明LIMIT限制数量和目的]
+            - 业务含义：[解释查询的业务价值和实际应用场景]
             
             要求：
-            1. 第一行必须是"信息推理，本次推理参考业务信息是："开头
-            2. 后续内容要详细说明推理过程和业务规则
-            3. 不要包含任何其他格式或额外说明
+            1. 严格按照上述格式输出，每行一个要点
+            2. 每个要点都要简洁明了，用一句话说明
+            3. 重点突出业务逻辑和实际应用场景
+            4. 避免过于技术化的描述，让用户容易理解
+            5. 不要包含任何其他格式、标题或额外说明
             """;
 
     // 步骤4: SQL生成提示模板
     private static final String STEP4_PROMPT = """
-            基于前面的分析，生成SQL查询语句。
+            基于前面的深度分析，生成高质量的SQL查询语句。
             
             查询需求：{rewrittenQuery}
             选中表：{selectedTables}
@@ -126,20 +132,26 @@ public class StepBasedText2SqlService {
             ```
             
             **SQL智能注释**
-            > 1. [对SQL语句的详细解释]
-            > 2. [对各个子句的说明]
-            > 3. [业务逻辑的解释]
+            > 1. **查询目的**: [说明这个查询要解决什么业务问题]
+            > 2. **字段说明**: [解释SELECT子句中每个字段的作用和含义]
+            > 3. **表关联**: [说明FROM和JOIN子句的表关联逻辑]
+            > 4. **条件筛选**: [解释WHERE子句的筛选条件和业务含义]
+            > 5. **分组聚合**: [说明GROUP BY和聚合函数的使用原因]
+            > 6. **排序逻辑**: [解释ORDER BY的排序规则和业务价值]
+            > 7. **性能优化**: [说明LIMIT、索引使用等性能考虑]
+            > 8. **业务价值**: [总结查询结果对业务决策的帮助]
             
             要求：
             1. 第一行必须是"查询SQL生成，生成SQL查询语句为："开头
             2. 生成的SQL语句必须用"```sql"和"```"包围
             3. 生成标准的SQL查询语句，只使用SELECT查询
-            4. 使用正确的表名和字段名
-            5. 添加适当的WHERE条件
+            4. 使用正确的表名和字段名，遵循数据库命名规范
+            5. 根据推理结果添加适当的WHERE条件、JOIN、GROUP BY等
             6. 使用LIMIT限制结果数量（最多1000条）
-            7. 确保SQL语法正确
-            8. 提供详细的SQL智能注释
-            9. 不要包含任何其他格式或额外说明
+            7. 确保SQL语法正确，符合MySQL标准
+            8. 提供详细的SQL智能注释，每个注释都要有业务价值
+            9. 考虑查询性能和可读性
+            10. 不要包含任何其他格式或额外说明
             """;
 
     // 步骤5: SQL执行提示模板
@@ -284,8 +296,76 @@ public class StepBasedText2SqlService {
      * 执行步骤3: 信息推理
      */
     private Text2SqlStepResult.StepResult executeStep3(String rewrittenQuery, String selectedTables) {
+        // 生成业务规则参考信息
+        String businessRules = generateBusinessRules(rewrittenQuery, selectedTables);
+        
         return executeStep(3, STEP3_PROMPT,
-                Map.of("rewrittenQuery", rewrittenQuery, "selectedTables", selectedTables));
+                Map.of("rewrittenQuery", rewrittenQuery, 
+                       "selectedTables", selectedTables,
+                       "businessRules", businessRules));
+    }
+    
+    /**
+     * 生成业务规则参考信息
+     */
+    private String generateBusinessRules(String query, String selectedTables) {
+        StringBuilder rules = new StringBuilder();
+        
+        // 时间推理 - 简化输出
+        String timeLogic = businessRuleService.parseTimeExpression(query);
+        if (timeLogic != null && !timeLogic.contains("无法解析")) {
+            rules.append("时间范围: ").append(timeLogic.replace("时间范围: ", "")).append("; ");
+        }
+        
+        // 业务逻辑推理 - 简化输出
+        String businessLogic = businessRuleService.getBusinessLogic(query, selectedTables);
+        if (!businessLogic.isEmpty()) {
+            // 提取关键信息，去掉"推理:"等前缀
+            String simplifiedLogic = businessLogic.replaceAll("(时间推理|状态推理|排序推理|分组推理|限制推理): ", "").trim();
+            if (!simplifiedLogic.isEmpty()) {
+                rules.append("业务规则: ").append(simplifiedLogic).append("; ");
+            }
+        }
+        
+        // 字段需求推理 - 简化输出
+        if (selectedTables != null && !selectedTables.isEmpty()) {
+            String[] tables = selectedTables.split(",");
+            for (String table : tables) {
+                String fieldRequirements = businessRuleService.getFieldRequirements(query, table.trim());
+                if (!fieldRequirements.isEmpty()) {
+                    // 提取字段名，去掉"需要"等前缀
+                    String fields = fieldRequirements.replaceAll("需要", "").replaceAll("字段", "").trim();
+                    if (!fields.isEmpty()) {
+                        rules.append("关键字段: ").append(fields).append("; ");
+                    }
+                }
+            }
+        }
+        
+        // 表关联规则 - 简化输出
+        if (selectedTables != null && selectedTables.contains(",")) {
+            String[] tables = selectedTables.split(",");
+            if (tables.length >= 2) {
+                String joinRule = businessRuleService.getTableJoinRule(tables[0].trim(), tables[1].trim());
+                if (!joinRule.isEmpty() && !joinRule.contains("无法确定")) {
+                    rules.append("表关联: ").append(joinRule).append("; ");
+                }
+            }
+        }
+        
+        // 聚合规则推理 - 简化输出
+        String aggregationRule = businessRuleService.getAggregationRule(query, selectedTables);
+        if (!aggregationRule.isEmpty() && !aggregationRule.contains("未指定指标")) {
+            rules.append("聚合方式: ").append(aggregationRule).append("; ");
+        }
+        
+        String result = rules.toString().trim();
+        // 去掉最后的分号
+        if (result.endsWith("; ")) {
+            result = result.substring(0, result.length() - 2);
+        }
+        
+        return result.isEmpty() ? "基于查询需求进行智能分析" : result;
     }
 
     /**

@@ -744,9 +744,10 @@
                 return '<ul class="mb-2">' + items + '</ul>';
             });
             
+            // 修复一级列表的正则表达式，确保能正确匹配多行列表
             html = html.replace(/((?:^- .+$\n?)+)/gm, function(match) {
                 // 处理一级列表块
-                const items = match.trim().split('\n').map(line => {
+                const items = match.trim().split('\n').filter(line => line.trim()).map(line => {
                     const content = line.replace(/^- /, '');
                     return '<li>' + content + '</li>';
                 }).join('');
