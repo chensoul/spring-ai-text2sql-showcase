@@ -1,6 +1,16 @@
 # Spring AI Text2SQL Showcase
 
+[![CI/CD Pipeline](https://github.com/chensoul/spring-ai-text2sql-showcase/actions/workflows/ci.yml/badge.svg)](https://github.com/chensoul/spring-ai-text2sql-showcase/actions/workflows/ci.yml)
+[![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=coverage)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
+
 一个使用 Spring AI 实现自然语言转 SQL 查询的演示项目。用户可以通过自然语言描述查询需求，AI 会自动生成对应的 SQL 语句并执行查询。
+
+![Spring AI Text2SQL 直接模式界面展示 - 自然语言数据库查询系统前端界面，包含中文查询输入框、示例查询模板、SQL生成结果展示和数据库结构查看功能](https://csmos.oss-cn-beijing.aliyuncs.com/spring-ai-text2sql-showcase-01.png)
 
 ## 功能特性
 

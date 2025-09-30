@@ -20,10 +20,12 @@
     <description>使用 Spring AI 实现自然语言转 SQL 查询的示例项目</description>
 
     <properties>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>25</java.version>
         <spring-ai.version>1.1.0-M2</spring-ai.version>
+
+        <sonar.projectKey>spring-ai-text2sql-showcase</sonar.projectKey>
+        <sonar.organization>chensoul</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <dependencyManagement>
