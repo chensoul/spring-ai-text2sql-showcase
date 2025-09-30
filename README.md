@@ -25,7 +25,7 @@
 ## 技术栈
 
 - **后端**：Spring Boot 3.5.6, Spring AI 1.1.0-M2
-- **数据库**：MySQL 8 (Docker 容器)
+- **数据库**：MySQL 9 (Docker 容器)
 - **AI 模型**：DeepSeek Chat API
 - **前端**：Bootstrap 5, Thymeleaf
 - **构建工具**：Maven
@@ -87,9 +87,9 @@
 │  │  - ProjectMember (项目成员)                              │ │
 │  └─────────────────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│  数据存储层 (MySQL 8 + Docker)                             │
+│  数据存储层 (MySQL 9 + Docker)                             │
 │  ┌─────────────────────────────────────────────────────────┐ │
-│  │  MySQL 8 数据库容器                                      │ │
+│  │  MySQL 9 数据库容器                                      │ │
 │  │  - Docker Compose 管理                                   │ │
 │  │  - UTF-8 字符编码支持                                    │ │
 │  │  - 自动初始化脚本                                        │
@@ -440,7 +440,7 @@ default-character-set=utf8mb4
 ## 扩展功能
 
 ### 1. 数据库配置
-项目使用 MySQL 8 数据库，通过 Docker Compose 管理：
+项目使用 MySQL 9 数据库，通过 Docker Compose 管理：
 
 ```yaml
 # docker-compose.yml
