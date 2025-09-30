@@ -14,7 +14,7 @@
 
 ## 技术栈
 
-- **后端**：Spring Boot 3.5.6, Spring AI 1.0.0-M4
+- **后端**：Spring Boot 3.5.6, Spring AI 1.1.0-M2
 - **数据库**：MySQL 8 (Docker 容器)
 - **AI 模型**：DeepSeek Chat API
 - **前端**：Bootstrap 5, Thymeleaf
@@ -22,11 +22,77 @@
 - **容器化**：Docker Compose
 - **工具集成**：Spring AI Tools, MCP 工具支持
 
+## 项目架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Spring AI Text2SQL 架构                    │
+├─────────────────────────────────────────────────────────────┤
+│  前端层 (Thymeleaf + Bootstrap)                              │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  Web 界面 (index.html)                                  │ │
+│  │  - 自然语言输入框                                        │ │
+│  │  - 示例查询模板                                          │ │
+│  │  - 结果展示区域                                          │ │
+│  └─────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│  REST API 层 (Spring MVC)                                   │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  Text2SqlController                                     │ │
+│  │  - POST /api/query (处理查询请求)                        │ │
+│  │  - GET /api/schema (获取数据库结构)                      │ │
+│  │  - GET /api/health (健康检查)                           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│  业务逻辑层 (Spring Services)                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  Text2SqlService                                        │ │
+│  │  - 自然语言转 SQL 核心逻辑                               │ │
+│  │  - SQL 安全验证                                          │ │
+│  │  - 查询结果封装                                          │ │
+│  │                                                         │ │
+│  │  DatabaseSchemaService                                  │ │
+│  │  - 数据库结构信息获取                                    │ │
+│  │  - 示例数据提供                                          │ │
+│  └─────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│  AI 集成层 (Spring AI)                                      │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  ChatClient (DeepSeek Chat API)                         │ │
+│  │  - 自然语言理解                                          │ │
+│  │  - SQL 生成                                              │ │
+│  │  - 提示工程优化                                          │ │
+│  └─────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│  数据访问层 (Spring Data JPA + JDBC)                        │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  JdbcTemplate                                           │ │
+│  │  - SQL 执行                                              │ │
+│  │  - 结果集处理                                            │ │
+│  │                                                         │ │
+│  │  Entity Models                                          │ │
+│  │  - Employee (员工)                                       │ │
+│  │  - Project (项目)                                        │ │
+│  │  - Department (部门)                                     │ │
+│  │  - ProjectMember (项目成员)                              │ │
+│  └─────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│  数据存储层 (MySQL 8 + Docker)                             │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  MySQL 8 数据库容器                                      │ │
+│  │  - Docker Compose 管理                                   │ │
+│  │  - UTF-8 字符编码支持                                    │ │
+│  │  - 自动初始化脚本                                        │
+│  │  - 示例数据存储                                          │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## 快速开始
 
 ### 1. 环境要求
 
-- Java 17+
+- Java 25+
 - Maven 3.6+
 - Docker & Docker Compose
 - DeepSeek API Key
@@ -92,6 +158,42 @@ mvn clean spring-boot:run
    - 输入：`查询参与项目最多的员工`
    - 生成 SQL：`SELECT e.name, COUNT(pm.project_id) as project_count FROM employees e JOIN project_members pm ON e.id = pm.employee_id GROUP BY e.id, e.name ORDER BY project_count DESC LIMIT 1`
 
+## 数据库结构
+
+项目包含以下示例表：
+
+### employees 表（员工表）
+- `id`: 主键
+- `name`: 员工姓名
+- `department`: 部门
+- `position`: 职位
+- `salary`: 工资
+- `hire_date`: 入职日期
+- `email`: 邮箱
+
+### projects 表（项目表）
+- `id`: 主键
+- `name`: 项目名称
+- `description`: 项目描述
+- `start_date`: 开始日期
+- `end_date`: 结束日期
+- `status`: 项目状态
+- `budget`: 项目预算
+
+### departments 表（部门表）
+- `id`: 主键
+- `name`: 部门名称
+- `manager_id`: 部门经理ID
+- `budget`: 部门预算
+- `location`: 办公地点
+
+### project_members 表（项目成员关系表）
+- `id`: 主键
+- `project_id`: 项目ID
+- `employee_id`: 员工ID
+- `role`: 在项目中的角色
+- `join_date`: 加入项目日期
+
 ## 项目结构
 
 ```
@@ -117,18 +219,6 @@ src/main/java/com/example/text2sql/
 │   └── Text2SqlStepResult.java      # 分步骤查询结果
 └── util/
     └── SqlUtils.java                # SQL 工具类
-
-src/main/resources/
-├── application.yml                  # 应用配置
-├── schema.sql                      # 数据库结构
-├── data.sql                        # 示例数据
-└── templates/
-    ├── index.html                  # 主页面
-    └── step.html                   # 分步骤查询页面
-
-# Docker 配置
-├── docker-compose.yml              # Docker Compose 配置
-└── mysql.cnf                       # MySQL 字符编码配置
 ```
 
 ## API 接口
@@ -301,6 +391,42 @@ public ChatClient mcpChatClient(ChatClient.Builder chatClientBuilder, DatabaseTo
 - `getTableNames`：获取所有表名
 - `getTableSchema`：获取指定表的结构信息
 
+## 故障排除
+
+### 1. DeepSeek API Key 问题
+```
+错误：401 Unauthorized
+解决：检查 DEEPSEEK_API_KEY 是否正确设置
+```
+
+### 2. 数据库连接问题
+```
+错误：Cannot connect to database
+解决：确保 MySQL 容器正在运行
+docker-compose up -d
+docker logs text2sql-mysql
+```
+
+### 3. 中文字符乱码问题
+```
+错误：数据库中文显示乱码
+解决：确保 mysql.cnf 文件正确配置
+[mysql]
+default-character-set=utf8mb4
+```
+
+### 4. AI 模型响应问题
+```
+错误：AI model not responding
+解决：检查网络连接和 API 配额
+```
+
+### 5. SQL 生成问题
+```
+错误：Generated SQL is invalid
+解决：检查查询描述是否清晰，尝试使用更具体的描述
+```
+
 ## 扩展功能
 
 ### 1. 数据库配置
@@ -377,9 +503,6 @@ public String customTool(@ToolParam(description = "参数描述") String param) 
 }
 ```
 
-### 5. 查询历史记录
-可以添加查询历史记录功能，保存用户的查询历史和结果。
-
 ## 项目亮点
 
 1. **完整的端到端实现**：从自然语言输入到 SQL 结果展示
@@ -397,37 +520,6 @@ public String customTool(@ToolParam(description = "参数描述") String param) 
 3. **开发人员**：快速原型和测试查询
 4. **数据探索**：发现数据中的模式和关系
 5. **教学演示**：展示 AI 在数据库查询中的应用
-
-## 故障排除
-
-### 1. DeepSeek API Key 问题
-确保设置了正确的 API Key：
-```bash
-export DEEPSEEK_API_KEY="your-actual-api-key"
-```
-
-### 2. 数据库连接问题
-确保 MySQL 容器正在运行：
-```bash
-# 检查容器状态
-docker ps
-
-# 启动数据库
-docker-compose up -d
-
-# 查看数据库日志
-docker logs text2sql-mysql
-```
-
-### 3. 中文字符乱码问题
-确保 `mysql.cnf` 文件正确配置：
-```ini
-[mysql]
-default-character-set=utf8mb4
-```
-
-### 4. AI 模型响应问题
-检查网络连接和 API 配额是否充足。
 
 ## 贡献指南
 
