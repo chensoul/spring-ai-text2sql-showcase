@@ -12,8 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.example.text2sql.util.SqlUtils.cleanSql;
 import static com.example.text2sql.util.SqlUtils.isSqlSafe;
