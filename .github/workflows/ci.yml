@@ -22,7 +22,6 @@ jobs:
 
       - name: Build
         run: |
-          cd rose-playground-backend
           mvn -ntp -B -am clean compile
 
       - name: SonarQube Scan
@@ -30,5 +29,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          cd rose-playground-backend
           mvn -ntp -B -am sonar:sonar -Dsonar.token=$SONAR_TOKEN
