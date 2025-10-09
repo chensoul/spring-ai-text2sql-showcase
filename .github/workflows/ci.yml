@@ -25,7 +25,7 @@ jobs:
           mvn -ntp -B -am clean compile
 
       - name: SonarQube Scan
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.SONAR_TOKEN != ''
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
