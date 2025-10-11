@@ -8,5 +8,20 @@
   "automerge": true,
   "automergeType": "pr",
   "automergeStrategy": "squash",
-  "requiredStatusChecks": null
+  "requiredStatusChecks": null,
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "enabled": false
+    },
+    {
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "enabled": true
+    }
+  ]
 }
