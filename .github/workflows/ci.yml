@@ -20,9 +20,9 @@ jobs:
           java-version: '25'
           cache: 'maven'
 
-      - name: Build
+      - name: Maven Build
         run: |
-          mvn -ntp -B -am clean compile
+          mvn -ntp -B clean compile
 
       - name: SonarQube Scan
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -31,7 +31,9 @@ jobs:
         run: |
           if [ -n "$SONAR_TOKEN" ]; then
             echo "SONAR_TOKEN found, running SonarQube scan..."
-            mvn -ntp -B -am sonar:sonar -Dsonar.token=$SONAR_TOKEN
+            OWNER=$(echo $GITHUB_REPOSITORY | cut -d'/' -f1)
+            PROJECT_NAME=$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)
+            mvn -ntp -B sonar:sonar -Dsonar.organization=$OWNER -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectKey=$PROJECT_NAME -Dsonar.token=$SONAR_TOKEN
           else
             echo "SONAR_TOKEN not found, skipping SonarQube scan"
           fi

@@ -12,7 +12,7 @@ jobs:
   release:
     name: Release to Maven Central
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
@@ -42,7 +42,7 @@ jobs:
         reporter: java-junit
 
     - name: Build and package
-      run: mvn clean package -DskipTests
+      run: mvn clean package -DskipTests -Pcentral
 
     - name: Create Release
       uses: actions/create-release@v1
@@ -53,13 +53,3 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: target/docker-ai-app-${{ github.ref_name }}.jar
-        asset_name: docker-ai-app-${{ github.ref_name }}.jar
-        asset_content_type: application/java-archive
