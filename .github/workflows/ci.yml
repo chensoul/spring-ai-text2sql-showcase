@@ -2,38 +2,17 @@ name: Maven Build
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Setup JDK 25
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: '25'
-          cache: 'maven'
-
-      - name: Maven Build
-        run: |
-          mvn -ntp -B clean compile
-
-      - name: SonarQube Scan
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          if [ -n "$SONAR_TOKEN" ]; then
-            echo "SONAR_TOKEN found, running SonarQube scan..."
-            OWNER=$(echo $GITHUB_REPOSITORY | cut -d'/' -f1)
-            PROJECT_NAME=$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)
-            mvn -ntp -B sonar:sonar -Dsonar.organization=$OWNER -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectKey=$PROJECT_NAME -Dsonar.token=$SONAR_TOKEN
-          else
-            echo "SONAR_TOKEN not found, skipping SonarQube scan"
-          fi
+      - name: Deploy to Maven Central
+        uses: rosestack/maven-build-action@main

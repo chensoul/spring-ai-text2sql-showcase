@@ -1,12 +1,9 @@
 # Spring AI Text2SQL Showcase
 
-[![CI/CD Pipeline](https://github.com/chensoul/spring-ai-text2sql-showcase/actions/workflows/ci.yml/badge.svg)](https://github.com/chensoul/spring-ai-text2sql-showcase/actions/workflows/ci.yml)
-[![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=coverage)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=spring-ai-text2sql-showcase&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=spring-ai-text2sql-showcase)
+[![GitHub release](https://img.shields.io/github/v/release/chensoul/spring-ai-text2sql-showcase)](https://github.com/chensoul/spring-ai-text2sql-showcase/releases)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/chensoul/spring-ai-text2sql-showcase/ci.yml?branch=main)](https://github.com/chensoul/spring-ai-text2sql-showcase/actions/workflows/test.yml)
+[![License](https://img.shields.io/github/license/chensoul/spring-ai-text2sql-showcase)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/chensoul/spring-ai-text2sql-showcase)](https://github.com/chensoul/spring-ai-text2sql-showcase/stargazers)
 
 一个使用 Spring AI 实现自然语言转 SQL 查询的演示项目。用户可以通过自然语言描述查询需求，AI 会自动生成对应的 SQL 语句并执行查询。
 
