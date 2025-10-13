@@ -21,7 +21,7 @@
 
 ## 技术栈
 
-- **后端**：Spring Boot 3.5.6, Spring AI 1.1.0-M2
+- **后端**：Spring Boot 3.5.6, Spring AI 1.0.3
 - **数据库**：MySQL 9 (Docker 容器)
 - **AI 模型**：DeepSeek Chat API
 - **前端**：Bootstrap 5, Thymeleaf
@@ -99,7 +99,7 @@
 
 ### 1. 环境要求
 
-- Java 25+
+- Java 17+
 - Maven 3.6+
 - Docker & Docker Compose
 - DeepSeek API Key
