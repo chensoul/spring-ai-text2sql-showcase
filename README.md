@@ -1,6 +1,5 @@
 # Spring AI Text2SQL Showcase
 
-[![GitHub release](https://img.shields.io/github/v/release/chensoul/spring-ai-text2sql-showcase)](https://github.com/chensoul/spring-ai-text2sql-showcase/releases)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/chensoul/spring-ai-text2sql-showcase/maven-build.yml?branch=main)](https://github.com/chensoul/spring-ai-text2sql-showcase/actions/workflows/maven-build.yml)
 [![License](https://img.shields.io/github/license/chensoul/spring-ai-text2sql-showcase)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/chensoul/spring-ai-text2sql-showcase)](https://github.com/chensoul/spring-ai-text2sql-showcase/stargazers)
