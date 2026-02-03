@@ -6,8 +6,6 @@
 
 一个使用 Spring AI 实现自然语言转 SQL 查询的演示项目，详细说明请参考[《Spring AI 让数据库听懂人话：Text2SQL 自然语言查询实践指南》](https://blog.chensoul.cc/posts/2025/09/30/spring-ai-text2sql-showcase/)。用户可以通过自然语言描述查询需求，AI 会自动生成对应的 SQL 语句并执行查询。
 
-![Spring AI Text2SQL 直接模式界面展示 - 自然语言数据库查询系统前端界面，包含中文查询输入框、示例查询模板、SQL生成结果展示和数据库结构查看功能](https://csmos.oss-cn-beijing.aliyuncs.com/spring-ai-text2sql-showcase-01.png)
-
 ## 功能特性
 
 - 🤖 **智能 SQL 生成**：使用 Spring AI 和 DeepSeek Chat API 将自然语言转换为 SQL 查询
@@ -20,7 +18,7 @@
 
 ## 技术栈
 
-- **后端**：Spring Boot 3.5.7, Spring AI 1.1.0
+- **后端**：Spring Boot 3.5.9, Spring AI 1.1.2
 - **数据库**：MySQL 9 (Docker 容器)
 - **AI 模型**：DeepSeek Chat API
 - **前端**：Bootstrap 5, Thymeleaf
