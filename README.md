@@ -1,8 +1,8 @@
 # Spring AI Text2SQL Showcase
 
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/chensoul/spring-ai-text2sql-showcase/maven-build.yml?branch=main)](https://github.com/chensoul/spring-ai-text2sql-showcase/actions/workflows/maven-build.yml)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/chensoul/spring-ai-text2sql-showcase/maven-build.yml?branch=main)](https://github.com/zhijunio/spring-ai-text2sql-showcase/actions/workflows/maven-build.yml)
 [![License](https://img.shields.io/github/license/chensoul/spring-ai-text2sql-showcase)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/chensoul/spring-ai-text2sql-showcase)](https://github.com/chensoul/spring-ai-text2sql-showcase/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/chensoul/spring-ai-text2sql-showcase)](https://github.com/zhijunio/spring-ai-text2sql-showcase/stargazers)
 
 一个使用 Spring AI 实现自然语言转 SQL 查询的演示项目，详细说明请参考[《Spring AI 让数据库听懂人话：Text2SQL 自然语言查询实践指南》](https://blog.chensoul.cc/posts/2025/09/30/spring-ai-text2sql-showcase/)。用户可以通过自然语言描述查询需求，AI 会自动生成对应的 SQL 语句并执行查询。
 
