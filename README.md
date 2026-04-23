@@ -18,7 +18,7 @@
 
 ## 技术栈
 
-- **后端**：Spring Boot 3.5.9, Spring AI 1.1.2
+- **后端**：Spring Boot 4.0.5, Spring AI 1.1.4
 - **数据库**：MySQL 9 (Docker 容器)
 - **AI 模型**：DeepSeek Chat API
 - **前端**：Bootstrap 5, Thymeleaf
