@@ -1,6 +1,5 @@
--- 插入示例数据
 -- 员工表数据
-INSERT IGNORE INTO employees (name, department, position, salary, hire_date, email) VALUES
+INSERT INTO employees (name, department, position, salary, hire_date, email) VALUES
 ('张三', '技术部', '高级工程师', 15000, '2022-01-15', 'zhangsan@company.com'),
 ('李四', '技术部', '工程师', 12000, '2022-03-20', 'lisi@company.com'),
 ('王五', '销售部', '销售经理', 18000, '2021-11-10', 'wangwu@company.com'),
@@ -11,7 +10,7 @@ INSERT IGNORE INTO employees (name, department, position, salary, hire_date, ema
 ('吴十', '市场部', '市场专员', 11000, '2023-01-10', 'wushi@company.com');
 
 -- 项目表数据
-INSERT IGNORE INTO projects (name, description, start_date, end_date, status, budget) VALUES
+INSERT INTO projects (name, description, start_date, end_date, status, budget) VALUES
 ('电商平台重构', '重构现有电商平台，提升性能和用户体验', '2023-01-01', '2023-06-30', '进行中', 500000),
 ('移动端应用开发', '开发公司移动端应用', '2023-03-01', '2023-08-31', '进行中', 300000),
 ('数据分析系统', '构建企业数据分析平台', '2022-10-01', '2023-02-28', '已完成', 200000),
@@ -19,7 +18,7 @@ INSERT IGNORE INTO projects (name, description, start_date, end_date, status, bu
 ('财务系统优化', '优化财务系统性能', '2022-12-01', '2023-01-31', '已完成', 80000);
 
 -- 项目成员关系表数据
-INSERT IGNORE INTO project_members (project_id, employee_id, role, join_date) VALUES
+INSERT INTO project_members (project_id, employee_id, role, join_date) VALUES
 (1, 1, '开发负责人', '2023-01-01'),
 (1, 2, '开发工程师', '2023-01-01'),
 (1, 7, '技术架构师', '2023-01-01'),
@@ -32,7 +31,7 @@ INSERT IGNORE INTO project_members (project_id, employee_id, role, join_date) VA
 (5, 6, '项目经理', '2022-12-01');
 
 -- 部门表数据
-INSERT IGNORE INTO departments (name, manager_id, budget, location) VALUES
+INSERT INTO departments (name, manager_id, budget, location) VALUES
 ('技术部', 7, 2000000, '北京'),
 ('销售部', 3, 1500000, '上海'),
 ('人事部', 5, 800000, '北京'),

@@ -15,7 +15,7 @@ public class SqlUtils {
     
     // 系统表黑名单
     private static final Set<String> SYSTEM_TABLES = Set.of(
-        "information_schema", "mysql", "performance_schema", 
+        "information_schema", "pg_catalog", "mysql", "performance_schema",
         "sys", "test", "tmp"
     );
 

@@ -26,7 +26,7 @@
 - Java
 - Spring Boot
 - Spring AI
-- MySQL 8
+- PostgreSQL 18
 - Maven
 - Bootstrap 5
 - Thymeleaf
@@ -34,7 +34,7 @@
 ## How to run?
 
 ```bash
-# Full build with tests
+# Full build with tests (integration tests use Testcontainers + PostgreSQL)
 $ ./mvnw clean verify
 
 # Run application(using Docker Compose)

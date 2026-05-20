@@ -1,42 +1,71 @@
--- 创建数据库表结构
 -- 员工表
 CREATE TABLE employees (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '员工ID',
-    name VARCHAR(100) NOT NULL COMMENT '员工姓名',
-    department VARCHAR(50) NOT NULL COMMENT '所属部门',
-    position VARCHAR(50) NOT NULL COMMENT '职位',
-    salary DECIMAL(10,2) NOT NULL COMMENT '工资',
-    hire_date DATE NOT NULL COMMENT '入职日期',
-    email VARCHAR(100) UNIQUE COMMENT '邮箱地址'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='员工信息表';
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    department VARCHAR(50) NOT NULL,
+    position VARCHAR(50) NOT NULL,
+    salary DECIMAL(10,2) NOT NULL,
+    hire_date DATE NOT NULL,
+    email VARCHAR(100) UNIQUE
+);
+
+COMMENT ON TABLE employees IS '员工信息表';
+COMMENT ON COLUMN employees.id IS '员工ID';
+COMMENT ON COLUMN employees.name IS '员工姓名';
+COMMENT ON COLUMN employees.department IS '所属部门';
+COMMENT ON COLUMN employees.position IS '职位';
+COMMENT ON COLUMN employees.salary IS '工资';
+COMMENT ON COLUMN employees.hire_date IS '入职日期';
+COMMENT ON COLUMN employees.email IS '邮箱地址';
 
 -- 部门表
 CREATE TABLE departments (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '部门ID',
-    name VARCHAR(50) NOT NULL UNIQUE COMMENT '部门名称',
-    manager_id BIGINT DEFAULT NULL COMMENT '部门经理ID',
-    budget DECIMAL(15,2) NOT NULL COMMENT '部门预算',
-    location VARCHAR(50) NOT NULL COMMENT '办公地点'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='部门信息表';
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    manager_id BIGINT DEFAULT NULL,
+    budget DECIMAL(15,2) NOT NULL,
+    location VARCHAR(50) NOT NULL
+);
+
+COMMENT ON TABLE departments IS '部门信息表';
+COMMENT ON COLUMN departments.id IS '部门ID';
+COMMENT ON COLUMN departments.name IS '部门名称';
+COMMENT ON COLUMN departments.manager_id IS '部门经理ID';
+COMMENT ON COLUMN departments.budget IS '部门预算';
+COMMENT ON COLUMN departments.location IS '办公地点';
 
 -- 项目表
 CREATE TABLE projects (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '项目ID',
-    name VARCHAR(100) NOT NULL COMMENT '项目名称',
-    description TEXT COMMENT '项目描述',
-    start_date DATE NOT NULL COMMENT '开始日期',
-    end_date DATE NOT NULL COMMENT '结束日期',
-    status VARCHAR(20) NOT NULL COMMENT '项目状态',
-    budget DECIMAL(15,2) NOT NULL COMMENT '项目预算'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='项目信息表';
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    budget DECIMAL(15,2) NOT NULL
+);
+
+COMMENT ON TABLE projects IS '项目信息表';
+COMMENT ON COLUMN projects.id IS '项目ID';
+COMMENT ON COLUMN projects.name IS '项目名称';
+COMMENT ON COLUMN projects.description IS '项目描述';
+COMMENT ON COLUMN projects.start_date IS '开始日期';
+COMMENT ON COLUMN projects.end_date IS '结束日期';
+COMMENT ON COLUMN projects.status IS '项目状态';
+COMMENT ON COLUMN projects.budget IS '项目预算';
 
 -- 项目成员关系表
 CREATE TABLE project_members (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '关系ID',
-    project_id BIGINT NOT NULL COMMENT '项目ID',
-    employee_id BIGINT NOT NULL COMMENT '员工ID',
-    role VARCHAR(50) NOT NULL COMMENT '在项目中的角色',
-    join_date DATE NOT NULL COMMENT '加入项目日期',
-    FOREIGN KEY (project_id) REFERENCES projects(id),
-    FOREIGN KEY (employee_id) REFERENCES employees(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='项目成员关系表';
+    id BIGSERIAL PRIMARY KEY,
+    project_id BIGINT NOT NULL REFERENCES projects(id),
+    employee_id BIGINT NOT NULL REFERENCES employees(id),
+    role VARCHAR(50) NOT NULL,
+    join_date DATE NOT NULL
+);
+
+COMMENT ON TABLE project_members IS '项目成员关系表';
+COMMENT ON COLUMN project_members.id IS '关系ID';
+COMMENT ON COLUMN project_members.project_id IS '项目ID';
+COMMENT ON COLUMN project_members.employee_id IS '员工ID';
+COMMENT ON COLUMN project_members.role IS '在项目中的角色';
+COMMENT ON COLUMN project_members.join_date IS '加入项目日期';

@@ -148,7 +148,7 @@ public class StepBasedText2SqlService {
             4. 使用正确的表名和字段名，遵循数据库命名规范
             5. 根据推理结果添加适当的WHERE条件、JOIN、GROUP BY等
             6. 使用LIMIT限制结果数量（最多1000条）
-            7. 确保SQL语法正确，符合MySQL标准
+            7. 确保SQL语法正确，符合PostgreSQL标准
             8. 提供详细的SQL智能注释，每个注释都要有业务价值
             9. 考虑查询性能和可读性
             10. 不要包含任何其他格式或额外说明

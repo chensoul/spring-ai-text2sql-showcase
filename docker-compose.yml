@@ -1,17 +1,14 @@
 services:
-  mysql:
-    image: mysql:9
-    container_name: text2sql-mysql
+  postgres:
+    image: postgres:18-alpine
+    container_name: text2sql-postgres
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: text2sql_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
       - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql
-
-volumes:
-  mysql_data:

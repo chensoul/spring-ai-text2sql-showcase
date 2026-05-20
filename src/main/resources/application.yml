@@ -4,10 +4,10 @@ spring:
   
   # 数据库配置
   datasource:
-    url: jdbc:mysql://localhost:3306/text2sql_db?connectTimeout=60000&socketTimeout=60000&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: root123
+    url: jdbc:postgresql://localhost:5432/postgres
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
 
   # JPA 配置
   jpa:
@@ -17,7 +17,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   
   # Spring AI 配置
   ai:

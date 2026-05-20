@@ -1,15 +1,13 @@
-package io.zhijun.spring.ai;
+package io.zhijun.spring.ai.service;
 
-import io.zhijun.spring.ai.service.DatabaseTool;
+import io.zhijun.spring.ai.BaseIT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-class TableCommentTest {
+class DatabaseToolTest extends BaseIT {
 
     @Autowired
     private DatabaseTool databaseTool;

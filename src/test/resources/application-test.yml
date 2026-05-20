@@ -1,0 +1,9 @@
+spring:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+  ai:
+    openai:
+      api-key: test-key

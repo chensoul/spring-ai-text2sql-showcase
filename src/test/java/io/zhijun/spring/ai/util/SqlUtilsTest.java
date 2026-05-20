@@ -76,8 +76,8 @@ public class SqlUtilsTest {
         assertTrue(systemTableError.contains("检测到危险操作"));
         
         // 测试其他系统表访问
-        String mysqlTableError = SqlUtils.getSecurityError("SELECT * FROM mysql.user");
-        assertTrue(mysqlTableError.contains("禁止访问系统表"));
+        String pgTableError = SqlUtils.getSecurityError("SELECT * FROM pg_catalog.pg_user");
+        assertTrue(pgTableError.contains("禁止访问系统表"));
         
         // 测试SQL注入
         String injectionError = SqlUtils.getSecurityError("SELECT * FROM employees WHERE id = 1 OR 1=1");
