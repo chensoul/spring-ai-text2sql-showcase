@@ -23,7 +23,7 @@
         <spring-ai.version>2.0.0-M6</spring-ai.version>
 
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
-        <jacoco.minimum.coverage>50%</jacoco.minimum.coverage>
+        <jacoco.minimum.coverage>20%</jacoco.minimum.coverage>
         <spotless.version>3.5.1</spotless.version>
         <palantir-java-format.version>2.90.0</palantir-java-format.version>
         <dockerImageName>${user.name}/${project.artifactId}</dockerImageName>

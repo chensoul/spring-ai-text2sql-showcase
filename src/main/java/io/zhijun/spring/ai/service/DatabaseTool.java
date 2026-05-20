@@ -30,7 +30,11 @@ public class DatabaseTool {
     private static String loadSql(String path) {
         try {
             ClassPathResource resource = new ClassPathResource(path);
-            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+            String sql = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8).trim();
+            if (sql.isEmpty()) {
+                throw new IllegalStateException("SQL file is empty: " + path);
+            }
+            return sql;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load SQL: " + path, e);
         }
@@ -63,14 +67,13 @@ public class DatabaseTool {
     }
 
     private String getDatabaseSchema(String table) {
-        String sql = SCHEMA_SQL;
-        Object[] args = new Object[0];
+        List<Map<String, Object>> results;
         if (table != null) {
-            sql = "SELECT * FROM (" + SCHEMA_SQL + ") schema_tables WHERE table_name = ?";
-            args = new Object[]{table};
+            String sql = "SELECT * FROM (" + SCHEMA_SQL + ") schema_tables WHERE table_name = ?";
+            results = jdbcTemplate.queryForList(sql, table);
+        } else {
+            results = jdbcTemplate.queryForList(SCHEMA_SQL);
         }
-
-        List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, args);
         return formatSchema(results);
     }
 
