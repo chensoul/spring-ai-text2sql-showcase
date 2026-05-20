@@ -1,6 +1,6 @@
 # Spring AI Text2SQL Showcase
 
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/chensoul/spring-ai-text2sql-showcase/maven-build.yml?branch=main)](https://github.com/zhijunio/spring-ai-text2sql-showcase/actions/workflows/maven-build.yml)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/zhijunio/spring-ai-text2sql-showcase/build.yml?branch=main)](https://github.com/zhijunio/spring-ai-text2sql-showcase/actions/workflows/build.yml)
 [![License](https://img.shields.io/github/license/zhijunio/spring-ai-text2sql-showcase)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/zhijunio/spring-ai-text2sql-showcase)](https://github.com/zhijunio/spring-ai-text2sql-showcase/stargazers)
 
