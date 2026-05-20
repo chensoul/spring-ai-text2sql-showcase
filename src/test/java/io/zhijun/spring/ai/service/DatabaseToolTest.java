@@ -3,7 +3,6 @@ package io.zhijun.spring.ai.service;
 import io.zhijun.spring.ai.BaseIT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -11,9 +10,6 @@ class DatabaseToolTest extends BaseIT {
 
     @Autowired
     private DatabaseTool databaseTool;
-    
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
     @Test
     void testTableComments() {

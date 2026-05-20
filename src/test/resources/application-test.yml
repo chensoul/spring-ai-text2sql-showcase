@@ -1,4 +1,7 @@
 spring:
+  docker:
+    compose:
+      enabled: false
   sql:
     init:
       mode: always
