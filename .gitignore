@@ -33,3 +33,5 @@ build/
 .vscode/
 
 generated_image_*
+
+.DS_Store
