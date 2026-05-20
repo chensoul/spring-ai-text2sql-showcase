@@ -1,10 +1,10 @@
 # Spring AI Text2SQL Showcase
 
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/chensoul/spring-ai-text2sql-showcase/maven-build.yml?branch=main)](https://github.com/zhijunio/spring-ai-text2sql-showcase/actions/workflows/maven-build.yml)
-[![License](https://img.shields.io/github/license/chensoul/spring-ai-text2sql-showcase)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/chensoul/spring-ai-text2sql-showcase)](https://github.com/zhijunio/spring-ai-text2sql-showcase/stargazers)
+[![License](https://img.shields.io/github/license/zhijunio/spring-ai-text2sql-showcase)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/zhijunio/spring-ai-text2sql-showcase)](https://github.com/zhijunio/spring-ai-text2sql-showcase/stargazers)
 
-一个使用 Spring AI 实现自然语言转 SQL 查询的演示项目，详细说明请参考[《Spring AI 让数据库听懂人话：Text2SQL 自然语言查询实践指南》](https://blog.chensoul.cc/posts/2025/09/30/spring-ai-text2sql-showcase/)。用户可以通过自然语言描述查询需求，AI 会自动生成对应的 SQL 语句并执行查询。
+一个使用 Spring AI 实现自然语言转 SQL 查询的演示项目，详细说明请参考[《Spring AI 让数据库听懂人话：Text2SQL 自然语言查询实践指南》](https://blog.chensoul.cc/posts/spring-ai-text2sql-showcase/)。用户可以通过自然语言描述查询需求，AI 会自动生成对应的 SQL 语句并执行查询。
 
 ## 功能特性
 
@@ -16,12 +16,36 @@
 - 📝 **示例查询**：提供常用查询示例，帮助用户快速上手
 - 🛠️ **工具集成**：支持 MCP 工具查询数据库结构，提高查询准确性
 
-## 技术栈
+## Prerequisites
 
-- **后端**：Spring Boot 4.0.5, Spring AI 1.1.4
-- **数据库**：MySQL 9 (Docker 容器)
-- **AI 模型**：DeepSeek Chat API
-- **前端**：Bootstrap 5, Thymeleaf
-- **构建工具**：Maven
-- **容器化**：Docker Compose
-- **工具集成**：Spring AI Tools, MCP 工具支持
+- JDK 25+
+- Docker and Docker Compose
+
+## Technology Stack
+
+- Java
+- Spring Boot
+- Spring AI
+- MySQL 8
+- Maven
+- Bootstrap 5
+- Thymeleaf
+
+## How to run?
+
+```bash
+# Full build with tests
+$ ./mvnw clean verify
+
+# Run application(using Docker Compose)
+$ ./mvnw spring-boot:run
+
+# Run application(using Testcontainers)
+$ ./mvnw spring-boot:test-run
+
+# Code formatting
+$ ./mvnw spotless:apply
+
+# Docker image build
+$ ./mvnw spring-boot:build-image -DskipTests
+```

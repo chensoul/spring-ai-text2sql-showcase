@@ -1,0 +1,32 @@
+version: '3'
+
+vars:
+  GOOS: "{{default OS .GOOS}}"
+  MVNW: '{{if eq .GOOS "windows"}}mvnw.cmd{{else}}./mvnw{{end}}'
+  SLEEP_CMD: '{{if eq .GOOS "windows"}}timeout{{else}}sleep{{end}}'
+
+tasks:
+  default:
+    cmds:
+      - task: test
+
+  test:
+    deps: [ format ]
+    cmds:
+      - "{{.MVNW}} clean verify"
+
+  format:
+    cmds:
+      - "{{.MVNW}} spotless:apply"
+
+  build:
+    deps: [ test ]
+    cmds:
+      - "{{.MVNW}} clean install -DskipTests"
+      - "{{.MVNW}} spring-boot:build-image -DskipTests"
+
+  sleep:
+    vars:
+      DURATION: "{{default 5 .DURATION}}"
+    cmds:
+      - "{{.SLEEP_CMD}} {{.DURATION}}"
