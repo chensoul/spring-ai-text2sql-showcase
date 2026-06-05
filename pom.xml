@@ -22,7 +22,7 @@
         <java.version>25</java.version>
         <spring-ai.version>2.0.0-M8</spring-ai.version>
 
-        <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <jacoco.minimum.coverage>20%</jacoco.minimum.coverage>
         <spotless.version>3.5.1</spotless.version>
         <palantir-java-format.version>2.90.0</palantir-java-format.version>
